@@ -45,10 +45,19 @@ class AdvancedConversationMemory:
         if status == "BLOCKED":
             self.global_risk_weight += 5.0
 
-    def get_last_intent(self) -> Optional[str]:
-        if self.history:
-            return self.history[-1]["intent_type"]
-        return None
+    def get_deep_context_intent(self) -> Optional[str]:
+        """
+        PREMIUM FEATURE: Scans the entire interaction history to find the most 
+        relevant security context, instead of just looking at the last message.
+        """
+        if not self.history:
+            return None
+        # Reverse scan to find the most recent specific cyber intent
+        for interaction in reversed(self.history):
+            intent = interaction["intent_type"]
+            if intent in ["sql", "command", "file", "crypto", "xss", "brute", "csrf"]:
+                return intent
+        return self.history[-1]["intent_type"]
 
     def get_session_analytics(self) -> Dict[str, Any]:
         return {
@@ -204,151 +213,191 @@ class DynamicThreatModeler:
 
 
 # =====================================================================
-# 7. EXPANDED BLUEPRINT DEFENSIVE ENGINE (7 ADVANCED CYBER BLUEPRINTS)
+# 7. HIGH-INTELLIGENCE MULTI-TIER ENGINE (SUPER PREMIUM ENGINE)
 # =====================================================================
 class SmartDefensiveGenerator:
     def __init__(self):
-        self.blueprints = {
-            "sql": '''def execute_secure_database_query(db_connection, client_supplied_id: int):
+        # Ultra Hardened Premium Blueprints (Enterprise Production Architecture)
+        self.premium_blueprints = {
+            "sql": '''def execute_secure_database_query(db_connection, client_supplied_id: int) -> dict:
     """
-    [DYNAMIC SECURE BLUEPRINT - SQL INJECTION DEFENSE]
-    Implements mandatory Parameterized Queries to block SQLi.
+    [ULTRA PREMIUM BLUEPRINT - SQL INJECTION DEFENSE]
+    Enforces strict typing constraint validation combined with full cryptographic 
+    abstraction layer using isolated Parameterized Queries bind arrays.
     """
     import logging
     try:
         sanitized_id = int(client_supplied_id)
         with db_connection.cursor() as cursor:
-            query = "SELECT account_id, balance, owner_name FROM accounts WHERE account_id = ?"
+            query = "SELECT account_id, balance, owner_name, tier_level FROM accounts WHERE account_id = ?"
             cursor.execute(query, (sanitized_id,))
             row = cursor.fetchone()
-            if row: return {"account_id": row[0], "balance": row[1]}
-            return None
+            if row: 
+                return {"account_id": row[0], "balance": row[1], "owner": row[2], "tier": row[3]}
+            return {"status": "Record target identifier not found."}
+    except (ValueError, TypeError) as type_err:
+        logging.error(f"Security Alert: Data type boundary exception intercepted: {str(type_err)}")
+        return {"status": "Error: Invalid parameter syntax provided."}
     except Exception:
-        logging.error("Internal database layer error masked.")
-        return None''',
+        logging.critical("Fatal Database Abstract Intercept triggered securely.")
+        return {"status": "Error: Internal server processing error."}''',
             
             "command": '''def execute_secure_network_diagnostic(target_destination: str) -> str:
     """
-    [DYNAMIC SECURE BLUEPRINT - COMMAND INJECTION DEFENSE]
-    Enforces Strict Regular Expression Whitelisting and completely isolates subprocess host context.
+    [ULTRA PREMIUM BLUEPRINT - COMMAND INJECTION PROTECTION]
+    Neutralizes remote host shell code interpolation threats via input alphanumeric regex whitelisting 
+    and complete programmatic removal of system execution interpreter layers.
     """
     import subprocess, re
-    if not re.match(r"^[a-zA-Z0-9.-]+$", target_destination):
-        raise ValueError("Security Violation: Illegal characters detected.")
+    if not re.match(r"^[a-zA-Z0-9.-]+$", target_destination.strip()):
+        raise PermissionError("Security Exception: Malicious command characters detected inside sequence payload.")
     
-    result = subprocess.run(["ping", "-c", "2", target_destination], capture_output=True, text=True, shell=False, timeout=5)
-    return result.stdout''',
+    try:
+        result = subprocess.run(
+            ["ping", "-c", "2", target_destination.strip()], 
+            capture_output=True, text=True, shell=False, timeout=5, check=True
+        )
+        return result.stdout
+    except subprocess.TimeoutExpired:
+        return "Diagnostic Error: Operation execution window timed out."
+    except subprocess.CalledProcessError as cmd_err:
+        return f"Execution Error Code [{cmd_err.returncode}]: Output terminal context unavailable."''',
             
             "file": '''def secure_file_retrieval(user_requested_path: str, storage_root: str = "/app/user_space") -> str:
     """
-    [DYNAMIC SECURE BLUEPRINT - PATH TRAVERSAL DEFENSE]
-    Resolves canonical absolute paths to eliminate path escaping injection attacks (../).
+    [ULTRA PREMIUM BLUEPRINT - DIRECTORY TRAVERSAL SANITIZATION]
+    Mitigates dynamic file retrieval path escaping sequences (../) by enforcing runtime 
+    canonical absolute directory layout mapping checks.
     """
     import os
-    base = os.path.abspath(storage_root)
-    target = os.path.abspath(os.path.join(base, user_requested_path))
+    base_directory = os.path.abspath(storage_root)
+    computed_target_path = os.path.abspath(os.path.join(base_directory, user_requested_path))
     
-    if not target.startswith(base):
-        raise PermissionError("Access Denied: Path Traversal Intercepted.")
+    if not computed_target_path.startswith(base_directory):
+        raise PermissionError("Access Violation Alert: Virtual machine sandbox traversal container escape blocked.")
         
-    with open(target, 'r', encoding='utf-8') as f:
-        return f.read()''',
+    if not os.path.exists(computed_target_path):
+        raise FileNotFoundError("Requested asset node cannot be located inside server storage index.")
+        
+    with open(computed_target_path, 'r', encoding='utf-8', errors='ignore') as active_file:
+        return active_file.read()''',
             
             "crypto": '''def hash_password_pbkdf2(password_string: str) -> str:
     """
-    [DYNAMIC SECURE BLUEPRINT - WEAK CRYPTO DEFENSE]
-    Replaces collision-prone algorithms (MD5, SHA1) with PBKDF2 adaptive derivation + unique salts.
+    [ULTRA PREMIUM BLUEPRINT - CRYPTOGRAPHIC HASH DERIVATION]
+    Utilizes advanced high-entropy PBKDF2-HMAC-SHA256 computational derivation matrices.
+    Applies dedicated pseudo-random salts to completely eliminate rainbow-table attack profiles.
     """
-    import hashlib, os
-    salt = os.urandom(32)
-    key = hashlib.pbkdf2_hmac('sha256', password_string.encode(), salt, 100000)
-    return f"{salt.hex()}:{key.hex()}"''',
+    import hashlib, os, secrets
+    salt_vector = secrets.token_bytes(32)
+    derived_key = hashlib.pbkdf2_hmac(
+        hash_name='sha256',
+        password=password_string.encode('utf-8'),
+        salt=salt_vector,
+        iterations=100000
+    )
+    return f"pbkdf2_sha256$100000${salt_vector.hex()}${derived_key.hex()}"''',
 
             "xss": '''def sanitize_html_output(untrusted_user_input: str) -> str:
     """
-    [DYNAMIC SECURE BLUEPRINT - XSS MITIGATION]
-    Enforces context-aware HTML entity encoding to neutralize Cross-Site Scripting injection blocks.
-    Converts characters like <, >, &, ", ' into safe rendered constants.
+    [ULTRA PREMIUM BLUEPRINT - REFLECTED & STORED XSS BLOCKER]
+    Deconstructs dangerous client payload injections using multi-layered null-byte scrubbing
+    and context-aware strict HTML entity encoding matrices.
     """
-    import html
-    if not untrusted_user_input:
+    import html, re
+    if not untrusted_user_input or not untrusted_user_input.strip():
         return ""
-    # Strip dangerous Null-bytes and run full structural HTML escape conversion
-    clean_step = untrusted_user_input.replace("\x00", "")
-    return html.escape(clean_step, quote=True)''',
+        
+    scrubbed_payload = untrusted_user_input.replace("\\x00", "").strip()
+    scrubbed_payload = re.sub(r"(?i)<script[^>]*>.*?</script>", "", scrubbed_payload)
+    return html.escape(scrubbed_payload, quote=True)''',
 
             "brute": '''def verify_login_with_rate_limiting(username: str, client_ip: str, cache_connection) -> bool:
     """
-    [DYNAMIC SECURE BLUEPRINT - BRUTE FORCE & DDOS MITIGATION]
-    Implements a sliding-window rate tracking algorithm using an in-memory ledger.
-    Blocks authentication pipelines if an threshold breach occurs.
+    [ULTRA PREMIUM BLUEPRINT - BRUTE FORCE RATE CONTROLLER]
+    Deploys a robust time-series ledger sliding-window mechanism tracking login authorization pipelines.
+    Guards authentication routes against high-velocity automated account takeover scripts.
     """
-    import time
-    now = time.time()
-    tracking_key = f"rate:login:{client_ip}"
+    import time, logging
+    current_epoch_time = time.time()
+    tracking_window_key = f"auth_rate_limit:ip:{client_ip}"
+    historical_attempts_ledger = cache_connection.get_attempts(tracking_window_key, since=current_epoch_time - 60)
     
-    # Simulate fetching attempts list inside timeframe window (e.g., last 60 seconds)
-    failed_attempts = cache_connection.get_attempts(tracking_key, since=now - 60)
-    if len(failed_attempts) >= 5:
-        raise PermissionError("Account Locked: Too many auth attempts. Please wait.")
+    if len(historical_attempts_ledger) >= 5:
+        logging.warning(f"Security Alert: Excessive authentication attempts blocked from Client IP {client_ip}")
+        raise PermissionError("Access Temporarily Locked: Too many consecutive request parameters within 60s window.")
         
     return True''',
 
             "csrf": '''def generate_and_verify_csrf_token(session_context: dict, client_token: str = None) -> str:
     """
-    [DYNAMIC SECURE BLUEPRINT - CSRF PREVENTION]
-    Generates and maps high-entropy unique tokens tied directly to the cryptographically active user session.
-    Prevents unauthorized state-changing cross-site request action duplication.
+    [ULTRA PREMIUM BLUEPRINT - CROSS-SITE REQUEST FORGERY SHIELD]
+    Generates and maps high-entropy anti-forgery request signature tokens tied directly to cryptographic session contexts.
+    Utilizes constant-time token verification matrices to block side-channel comparison attacks.
     """
     import secrets, hmac
     if client_token is None:
-        # Step 1: Generate a fresh token for a form presentation layer
-        new_token = secrets.token_hex(32)
-        session_context["csrf_secret"] = new_token
-        return new_token
+        cryptographic_token = secrets.token_hex(32)
+        session_context["secure_csrf_secret_key"] = cryptographic_token
+        return cryptographic_token
         
-    # Step 2: Validate incoming request parameters against internal session states
-    server_token = session_context.get("csrf_secret", "")
-    if not server_token or not hmac.compare_digest(server_token, client_token):
-        raise PermissionError("Cross-Site Request Forgery Guard Triggered: Tokens mismatched.")
-    return "VALIDATED"'''
+    server_cached_token = session_context.get("secure_csrf_secret_key", "")
+    if not server_cached_token:
+        raise PermissionError("Security Handshake Refused: Context session token signature is missing.")
+        
+    if not hmac.compare_digest(server_cached_token, client_token):
+        raise PermissionError("CSRF Attack Vector Triggered: Form challenge response validation has failed.")
+        
+    return "HANDSHAKE_VERIFIED"'''
+        }
+        
+        # Free Grade Blueprints (Low Accuracy, Bad Formatting, Raw/Unfinished Scripts)
+        self.free_blueprints = {
+            "sql": '''# FREE VERSION: Basic casting. Might crash or fail under edge cases.\ndef quick_sql(user_id):\n    # Alert: Upgrade to Premium for parameterized query protection\n    return f"SELECT * FROM users WHERE id = {int(user_id)}"''',
+            "command": '''# FREE VERSION: Incomplete regex checker. Dangerous primitive bypasses possible.\ndef basic_ping(ip):\n    import os\n    # Highly unrecommended. Premium subscription replaces os.system completely.\n    os.system("ping -c 1 " + ip)''',
+            "file": '''# FREE VERSION: Only strips simple dots. Vulnerable to nested traversal attacks.\ndef simple_read(path):\n    # Upgrade to Premium to block advanced directory traversal validation\n    clean_path = path.replace("../", "")\n    return open(clean_path).read()''',
+            "crypto": '''# FREE VERSION: Obsolete cryptography algorithm standard.\ndef weak_md5_hash(password):\n    import hashlib\n    # WARNING: MD5 has critical structural cryptographic collision bugs!\n    return hashlib.md5(password.encode()).hexdigest()''',
+            "xss": '''# FREE VERSION: Basic tag replacement filter.\ndef raw_replace(text):\n    # Flawed. Does not neutralize advanced nested XSS vectors\n    return text.replace("<script>", "")''',
+            "brute": '''# FREE VERSION: Inefficient counter tracking logic\ndef basic_count(user):\n    print("Log: checking attempts without distributed cluster cache sync.")\n    return True''',
+            "csrf": '''# FREE VERSION: Dummy placeholder structure\ndef bypass_csrf():\n    return "CSRF verification disabled in FREE tier"'''
         }
 
-    def determine_intent(self, user_query: str, last_intent: Optional[str]) -> str:
+    def determine_intent(self, user_query: str, last_intent: Optional[str], plan_tier: str) -> str:
         query_clean = user_query.lower().strip()
         
-        # 📂 1. XSS Detection
-        xss_keywords = ["xss", "cross-site scripting", "script injection", "html escape", "sanitize input", "גניבת עוגיות", "הזרקת סקריפט", "עוגיות", "סניטציה"]
-        if any(w in query_clean for w in xss_keywords): return "xss"
-
-        # 📂 2. Brute Force & Rate Limit Detection
-        brute_keywords = ["brute force", "rate limit", "ddos", "login block", "attempts", "הצפה", "חסימת משתמש", "ניחוש סיסמה", "מגבלת בקשות", "ברוט פורס"]
-        if any(w in query_clean for w in brute_keywords): return "brute"
-
-        # 📂 3. CSRF Detection
-        csrf_keywords = ["csrf", "cross-site request forgery", "xsrf", "form token", "זיוף בקשה", "טוקן", "טפסים מאובטחים"]
-        if any(w in query_clean for w in csrf_keywords): return "csrf"
-
-        # 📂 4. SQL Injection Detection
-        sql_keywords = ["sql", "db", "database", "query", "select", "בסיס נתונים", "שאילתה", "מסד", "נתונים"]
-        if any(w in query_clean for w in sql_keywords): return "sql"
+        # Free Tier ignores Hebrew entirely (simulating lower model capabilities)
+        if plan_tier == "FREE":
+            if "xss" in query_clean: return "xss"
+            if "brute" in query_clean or "limit" in query_clean: return "brute"
+            if "csrf" in query_clean: return "csrf"
+            if "sql" in query_clean or "db" in query_clean: return "sql"
+            if "command" in query_clean or "ping" in query_clean: return "command"
+            if "file" in query_clean or "path" in query_clean: return "file"
+            if "crypto" in query_clean or "hash" in query_clean or "password" in query_clean: return "crypto"
+            return "generic"
             
-        # 📂 5. Command Injection Detection
-        command_keywords = ["command", "os", "subprocess", "ping", "terminal", "run", "טרמינל", "פקודה", "פינג", "להריץ"]
-        if any(w in query_clean for w in command_keywords): return "command"
+        # Premium Tier has high-brainpower bilingual mapping dictionary
+        else:
+            xss_keywords = ["xss", "cross-site scripting", "script injection", "html escape", "sanitize input", "גניבת עוגיות", "הזרקת סקריפט", "עוגיות", "סניטציה"]
+            if any(w in query_clean for w in xss_keywords): return "xss"
+            brute_keywords = ["brute force", "rate limit", "ddos", "login block", "attempts", "הצפה", "חסימת משתמש", "ניחוש סיסמה", "מגבלת בקשות", "ברוט פורס"]
+            if any(w in query_clean for w in brute_keywords): return "brute"
+            csrf_keywords = ["csrf", "cross-site request forgery", "xsrf", "form token", "זיוף בקשה", "טוקן", "טפסים מאובטחים"]
+            if any(w in query_clean for w in csrf_keywords): return "csrf"
+            sql_keywords = ["sql", "db", "database", "query", "select", "בסיס נתונים", "שאילתה", "מסד", "נתונים"]
+            if any(w in query_clean for w in sql_keywords): return "sql"
+            command_keywords = ["command", "os", "subprocess", "ping", "terminal", "run", "טרמינל", "פקודה", "פינג", "להריץ"]
+            if any(w in query_clean for w in command_keywords): return "command"
+            file_keywords = ["file", "path", "read", "open", "directory", "קובץ", "לקרוא קובץ", "נתיב", "תיקייה"]
+            if any(w in query_clean for w in file_keywords): return "file"
+            crypto_keywords = ["crypto", "hash", "password", "encrypt", "sha", "md5", "salt", "הצפנה", "סיסמה", "האש", "להצפין"]
+            if any(w in query_clean for w in crypto_keywords): return "crypto"
             
-        # 📂 6. Path Traversal Detection
-        file_keywords = ["file", "path", "read", "open", "directory", "קובץ", "לקרוא קובץ", "נתיב", "תיקייה"]
-        if any(w in query_clean for w in file_keywords): return "file"
-            
-        # 📂 7. Weak Cryptography Detection
-        crypto_keywords = ["crypto", "hash", "password", "encrypt", "sha", "md5", "הצפנה", "סיסמה", "האש", "להצפין"]
-        if any(w in query_clean for w in crypto_keywords): return "crypto"
-            
-        return last_intent if last_intent else "generic"
+            return last_intent if last_intent else "generic"
 
-    def synthesize_secure_code(self, determined_intent: str) -> str:
-        return self.blueprints.get(determined_intent, '''def core_input_sanitizer(raw_data: str) -> str:\n    import html\n    return html.escape(raw_data.strip())[:1000]''')
+    def synthesize_secure_code(self, determined_intent: str, plan_tier: str) -> str:
+        active_blueprint_pool = self.premium_blueprints if plan_tier == "PREMIUM" else self.free_blueprints
+        return active_blueprint_pool.get(determined_intent, '''def core_input_sanitizer(raw_data: str) -> str:\n    import html\n    return html.escape(raw_data.strip())[:1000]''')
 
 
 # =====================================================================
@@ -379,9 +428,7 @@ is_url_admin_mode = url_parameters.get("page") == "admin"
 # --- ADMIN ROUTING INTERFACE ---
 if is_url_admin_mode:
     st.title("🔑 Secret Admin Gate — Identity Verification")
-    st.caption("Privileged routing detected via URL parameters. Cryptographic handshake required.")
     st.markdown("---")
-    
     if not st.session_state.is_admin:
         col_auth, _ = st.columns([1, 2])
         with col_auth:
@@ -391,14 +438,12 @@ if is_url_admin_mode:
                     st.session_state.is_admin = True
                     st.success("Access Granted! Master Session Initialized.")
                     st.rerun()
-                else:
-                    st.error("Authentication Failure: Invalid Secret Signatures.")
+                else: st.error("Authentication Failure: Invalid Secret Signatures.")
             if st.button("← Return to Public Main Site"):
                 st.query_params.clear() 
                 st.rerun()
     else:
         st.header("👑 WELCOME BACK MASTER ADMIN")
-        st.success("RBAC Status: FULL PRIVILEGED AUTHORIZATION ACTIVE")
         if st.button("🚪 Logout & Return to Main Site", type="secondary"):
             st.session_state.is_admin = False
             st.query_params.clear()
@@ -434,7 +479,28 @@ else:
     st.caption("Production Grade Monolith Implementation — Public User Workspace")
     st.markdown("---")
 
+    # Tier Plan Selection Configuration
     with st.sidebar:
+        st.header("💎 Choose Your Subscription Plan")
+        selected_plan = st.radio(
+            "Select Account Tier Level:",
+            ["FREE (Limited Brainpower, Raw Outputs)", "PREMIUM ($10/Mo - Deep Context, High Intelligence)"],
+            index=0
+        )
+        current_tier = "FREE" if "FREE" in selected_plan else "PREMIUM"
+        
+        if current_tier == "FREE":
+            st.info("ℹ️ Account Tier: FREE active. Prompt rate limits are throttled strictly. Hebrew input language processing disabled.")
+        else:
+            st.success("🌟 Account Tier: PREMIUM active! Accessing deep-context architectural cybersecurity blueprints.")
+            st.markdown("---")
+            st.markdown("### 💰 Premium Account Billing")
+            if st.button("💳 BUY PREMIUM LICENSE — $10.00", type="primary"):
+                st.toast("Processing Cryptographic Handshake via Merchant API...", icon="🔄")
+                time.sleep(0.5)
+                st.info("🔒 Secure Gate Open: To finalize your production license subscription, please contact the founder (Developer, Age 12) via direct corporate email/social channels to securely settle the payment gateway invoice via PayPal / Wire Transfer. Thank you for empowering tomorrow's cyber leaders!")
+
+        st.markdown("---")
         st.header("⚡ Live SIEM Infrastructure")
         st.text_input("Tracked Client IP", value=st.session_state.client_ip, disabled=True)
         st.text_input("Cryptographic Session ID", value=st.session_state.session_id[:20] + "...", disabled=True)
@@ -457,7 +523,8 @@ else:
 
     with col_workspace:
         st.header("🧠 Conversational Prompt Processing")
-        user_prompt = st.text_input("Enter your request:", value="Give me code to prevent XSS attacks.")
+        default_prompt = "Give me code to prevent XSS attacks." if current_tier == "FREE" else "תראה לי קוד מאובטח שמנטרל תקיפות XSS"
+        user_prompt = st.text_input("Enter your request:", value=default_prompt)
         
         st.header("🔬 Code Asset Vulnerability Simulator")
         default_flawed_script = 'def unsafe_utility(payload):\n    import os\n    db_pass = "Secret123"\n    os.system("ping -c 1 " + payload)'
@@ -471,10 +538,13 @@ else:
         if execute_pipeline_trigger:
             rate_limit_passed = True
             if st.session_state.rate_limiting_enabled:
-                rate_limit_passed = st.session_state.security_context.enforce_sliding_window_rate_limit(st.session_state.client_ip)
+                max_allowed_requests = 2 if current_tier == "FREE" else 5
+                rate_limit_passed = st.session_state.security_context.enforce_sliding_window_rate_limit(
+                    st.session_state.client_ip, max_reqs=max_allowed_requests, window=20
+                )
                 
             if not rate_limit_passed:
-                st.error("🚨 CRITICAL RATE LIMIT BREACH: Operations suspended inside window timeframe.")
+                st.error(f"🚨 CRITICAL RATE LIMIT BREACH: [{current_tier} TIER CAP REACHED]. Upgrade to premium or wait to restore transaction bandwidth.")
             else:
                 try:
                     sanitized_prompt = MultiTierInputValidator.sanitize_string(user_prompt)
@@ -487,9 +557,10 @@ else:
                         findings_report = st.session_state.code_analyzer.analyze(code_input_area)
                         threat_matrix_profile = DynamicThreatModeler.build_matrix(findings_report, memory_vault.global_risk_weight)
                         
-                        historical_intent_node = memory_vault.get_last_intent()
-                        derived_intent = st.session_state.generator.determine_intent(sanitized_prompt, historical_intent_node)
-                        secured_output_blueprint = st.session_state.generator.synthesize_secure_code(derived_intent)
+                        # PREMIUM uses get_deep_context_intent() for scanning historical sessions
+                        historical_intent_node = memory_vault.get_deep_context_intent() if current_tier == "PREMIUM" else None
+                        derived_intent = st.session_state.generator.determine_intent(sanitized_prompt, historical_intent_node, current_tier)
+                        secured_output_blueprint = st.session_state.generator.synthesize_secure_code(derived_intent, current_tier)
                         
                         memory_vault.commit_interaction(derived_intent, sanitized_prompt, len(findings_report), "SUCCESS")
                         
@@ -505,7 +576,7 @@ else:
                                 st.caption(element["details"])
                         else: st.success("✅ No structural vulnerabilities found in code fragment.")
                             
-                        st.markdown("### 🛡️ Hardened Safe-by-Design Python Implementation")
+                        st.markdown(f"### 🛡️ Hardened [{current_tier} TIER] Python Implementation")
                         st.code(secured_output_blueprint, language="python")
                         
                 except ValueError as val_err: st.error(f"Validation Error: {str(val_err)}")
