@@ -116,16 +116,17 @@ class MultiTierInputValidator:
         if not text or not text.strip():
             raise ValueError("Input data stream is empty or null.")
         if len(text) > max_chars:
-            raise ValueError(f"Input character cap exceeded.")
+            raise ValueError("Input character cap exceeded.")
         return text.replace("\x00", "").replace("\r", "")
 
     @staticmethod
     def inspect_malicious_payloads(text: str) -> Tuple[bool, str]:
         inspection_rules = {
             r"(?i)UNION\s+ALL\s+SELECT": "SQLi Injection Vector",
-            r"(?i)<iframe[^>]*>.*<\/iframe>": "XSS Vector",
-            r"(?i)javascript\s*:\s*alert": "DOM XSS Vector",
-            r"(__import__\s*\(|os\.system|subprocess\.|getattr\s*\()": "RCE Payload"
+            r"(?i)<iframe[^>]*>.*<\/iframe>": "XSS Payload Threat",
+            r"(?i)javascript\s*:\s*alert": "DOM XSS Injection",
+            r"(?i)document\.cookie": "Session Hijacking Vector",
+            r"(__import__\s*\(|os\.system|subprocess\.|getattr\s*\()": "RCE Server Payload"
         }
         for pattern, risk_name in inspection_rules.items():
             if re.search(pattern, text):
@@ -157,7 +158,7 @@ class ASTDeepAnalyzer:
                     for keyword in getattr(node, 'keywords', []):
                         if keyword.arg == 'shell':
                             if isinstance(keyword.value, ast.Constant) and keyword.value.value is True:
-                                is_shell_true = True
+                                import_shell_true = True
                     if is_shell_true or node.func.attr == 'system':
                         findings.append({"type": "ShellCommandInjection", "severity": "CRITICAL", "details": f"Subprocess invocation via '{node.func.attr}' allows host injection.", "line": getattr(node, 'lineno', 1)})
 
@@ -203,23 +204,94 @@ class DynamicThreatModeler:
 
 
 # =====================================================================
-# 7. BLUEPRINT RULE-BASED DEFENSIVE PYTHON GENERATOR
+# 7. BLUEPRINT RULE-BASED DEFENSIVE PYTHON GENERATOR (BILINGUAL NLP LOGIC)
 # =====================================================================
 class SmartDefensiveGenerator:
     def __init__(self):
         self.blueprints = {
-            "sql": '''def execute_secure_database_query(db_connection, client_supplied_id: int):\n    import logging\n    try:\n        sanitized_id = int(client_supplied_id)\n        with db_connection.cursor() as cursor:\n            query = "SELECT account_id, balance FROM accounts WHERE account_id = ?"\n            cursor.execute(query, (sanitized_id,))\n            return cursor.fetchone()\n    except Exception:\n        logging.error("Database transaction masked.")\n        return None''',
-            "command": '''def execute_secure_network_diagnostic(target_destination: str) -> str:\n    import subprocess, re\n    if not re.match(r"^[a-zA-Z0-9.-]+$", target_destination):\n        raise ValueError("Invalid diagnostic target syntax.")\n    result = subprocess.run(["ping", "-c", "2", target_destination], capture_output=True, text=True, shell=False, timeout=5)\n    return result.stdout''',
-            "file": '''def secure_file_retrieval(user_requested_path: str, storage_root: str = "/app/user_space") -> str:\n    import os\n    base = os.path.abspath(storage_root)\n    target = os.path.abspath(os.path.join(base, user_requested_path))\n    if not target.startswith(base):\n        raise PermissionError("Path Traversal Escape Blocked!")\n    with open(target, 'r', encoding='utf-8') as f:\n        return f.read()''',
-            "crypto": '''def hash_password_pbkdf2(password_string: str) -> str:\n    import hashlib, os\n    salt = os.urandom(32)\n    key = hashlib.pbkdf2_hmac('sha256', password_string.encode(), salt, 100000)\n    return f"{salt.hex()}:{key.hex()}"'''
+            "sql": '''def execute_secure_database_query(db_connection, client_supplied_id: int):
+    """
+    [DYNAMIC SECURE BLUEPRINT - SQL INJECTION DEFENSE]
+    Implements mandatory Parameterized Queries to block SQLi.
+    The abstraction engine separates execution code from untrusted user input parameters.
+    """
+    import logging
+    try:
+        sanitized_id = int(client_supplied_id)
+        with db_connection.cursor() as cursor:
+            query = "SELECT account_id, balance, owner_name FROM accounts WHERE account_id = ?"
+            cursor.execute(query, (sanitized_id,))
+            row = cursor.fetchone()
+            if row:
+                return {"account_id": row[0], "balance": row[1], "owner_name": row[2]}
+            return None
+    except Exception:
+        logging.error("Internal transaction failure occurred securely shielded.")
+        return None''',
+            
+            "command": '''def execute_secure_network_diagnostic(target_destination: str) -> str:
+    """
+    [DYNAMIC SECURE BLUEPRINT - COMMAND INJECTION DEFENSE]
+    Enforces Strict Alphanumeric Regular Expression Whitelisting and disables shell execution wrappers.
+    """
+    import subprocess, re
+    if not re.match(r"^[a-zA-Z0-9.-]+$", target_destination):
+        raise ValueError("Security Violation: Invalid diagnostic target syntax.")
+    
+    # shell=False isolates execution environment completely from OS interpreter shell vulnerabilities
+    result = subprocess.run(["ping", "-c", "2", target_destination], capture_output=True, text=True, shell=False, timeout=5)
+    return result.stdout''',
+            
+            "file": '''def secure_file_retrieval(user_requested_path: str, storage_root: str = "/app/user_space") -> str:
+    """
+    [DYNAMIC SECURE BLUEPRINT - PATH TRAVERSAL DEFENSE]
+    Resolves absolute execution paths on the host OS to prevent dynamic container escape sequences (../).
+    """
+    import os
+    base = os.path.abspath(storage_root)
+    target = os.path.abspath(os.path.join(base, user_requested_path))
+    
+    if not target.startswith(base):
+        raise PermissionError("Access Denied: Path Traversal Escape Intruders Blocked!")
+        
+    with open(target, 'r', encoding='utf-8') as f:
+        return f.read()''',
+            
+            "crypto": '''def hash_password_pbkdf2(password_string: str) -> str:
+    """
+    [DYNAMIC SECURE BLUEPRINT - WEAK CRYPTO DEFENSE]
+    Enforces adaptive Key Derivation via PBKDF2-HMAC-SHA256 reinforced with cryptographically secure salts.
+    Replaces collision-prone, broken legacy hashing structures like MD5 or SHA-1.
+    """
+    import hashlib, os
+    salt = os.urandom(32)
+    key = hashlib.pbkdf2_hmac('sha256', password_string.encode(), salt, 100000)
+    return f"{salt.hex()}:{key.hex()}"'''
         }
 
     def determine_intent(self, user_query: str, last_intent: Optional[str]) -> str:
-        query_clean = user_query.lower()
-        if any(w in query_clean for w in ["sql", "db", "database", "query"]): return "sql"
-        if any(w in query_clean for w in ["command", "os", "subprocess", "ping"]): return "command"
-        if any(w in query_clean for w in ["file", "path", "read", "open"]): return "file"
-        if any(w in query_clean for w in ["crypto", "hash", "password"]): return "crypto"
+        query_clean = user_query.lower().strip()
+        
+        # 📂 1. Intent Context Detection: Database & Queries (SQL)
+        sql_keywords = ["sql", "db", "database", "query", "select", "insert", "בסיס נתונים", "שאילתה", "מסד", "נתונים", "דאטה", "מערכת משתמשים", "טבלה"]
+        if any(w in query_clean for w in sql_keywords): 
+            return "sql"
+            
+        # 📂 2. Intent Context Detection: System Executions & Network (Command Injection)
+        command_keywords = ["command", "os", "subprocess", "ping", "terminal", "run", "cmd", "טרמינל", "פקודה", "פינג", "להריץ", "תשתית", "מערכת ההפעלה"]
+        if any(w in query_clean for w in command_keywords): 
+            return "command"
+            
+        # 📂 3. Intent Context Detection: File Operations & Paths (Path Traversal)
+        file_keywords = ["file", "path", "read", "open", "folder", "directory", "קובץ", "לקרוא קובץ", "נתיב", "תיקייה", "לפתוח", "טקסט", "אחסון"]
+        if any(w in query_clean for w in file_keywords): 
+            return "file"
+            
+        # 📂 4. Intent Context Detection: Passwords, Hashing & Secrets (Weak Crypto)
+        crypto_keywords = ["crypto", "hash", "password", "encrypt", "sha", "md5", "salt", "הצפנה", "סיסמה", "האש", "להצפין", "סודיות", "מפתח קריפטוגרפי"]
+        if any(w in query_clean for w in crypto_keywords): 
+            return "crypto"
+            
         return last_intent if last_intent else "generic"
 
     def synthesize_secure_code(self, determined_intent: str) -> str:
@@ -248,11 +320,13 @@ if not st.session_state.session_id:
 
 memory_vault = st.session_state.security_context.get_memory(st.session_state.session_id)
 
-# 🌐 בדיקת כתובת ה-URL: האם המשתמש ביקש את דף האדמין הסודי?
+# 🌐 URL Analysis for Enforced RBAC Routing Gateways
 url_parameters = st.query_params
 is_url_admin_mode = url_parameters.get("page") == "admin"
 
-# --- אפשרות 1: המשתמש נמצא בנתיב האדמין הסודי ---
+# =====================================================================
+# 🔑 PRIVILEGED ADMIN GATE INTERFACE (Triggered via ?page=admin)
+# =====================================================================
 if is_url_admin_mode:
     st.title("🔑 Secret Admin Gate — Identity Verification")
     st.caption("Privileged routing detected via URL parameters. Cryptographic handshake required.")
@@ -271,10 +345,9 @@ if is_url_admin_mode:
                     st.error("Authentication Failure: Invalid Secret Signatures.")
             
             if st.button("← Return to Public Main Site"):
-                st.query_params.clear() # מוחק את ה-admin מהכתובת ומחזיר לאתר הרגיל
+                st.query_params.clear() 
                 st.rerun()
     else:
-        # פאנל האדמין המלא והסודי (נחשף רק אחרי סיסמה נכונה בכתובת הנכונה)
         st.header("👑 WELCOME BACK MASTER ADMIN")
         st.success("RBAC Status: FULL PRIVILEGED AUTHORIZATION ACTIVE")
         
@@ -312,7 +385,9 @@ if is_url_admin_mode:
         else:
             st.caption("No transaction nodes captured inside current session pipeline.")
 
-# --- אפשרות 2: האתר הציבורי הרגיל (לא כתוב admin בכתובת) ---
+# =====================================================================
+# 🛡️ STANDARD PUBLIC WORKSPACE INTERFACE
+# =====================================================================
 else:
     st.title("🛡️ Enterprise Defensive AI Hub & SOC Radar Dashboard")
     st.caption("Production Grade Monolith Implementation — Public User Workspace")
