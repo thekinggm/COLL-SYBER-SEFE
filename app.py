@@ -24,7 +24,7 @@ logger = logging.getLogger("AdvancedDefensiveAI")
 # 2. STATEFUL CONTEXT & CONVERSATIONAL MEMORY MANAGEMENT
 # =====================================================================
 class AdvancedConversationMemory:
-    def __init__(self, max_history_len: int = 10):
+    def __init__(self, max_history_len: int = 20):  # Increased memory to 20 nodes
         self.history: List[Dict[str, Any]] = []
         self.max_history_len = max_history_len
         self.global_risk_weight: float = 0.0
@@ -47,12 +47,11 @@ class AdvancedConversationMemory:
 
     def get_deep_context_intent(self) -> Optional[str]:
         """
-        PREMIUM FEATURE: Scans the entire interaction history to find the most 
-        relevant security context, instead of just looking at the last message.
+        PREMIUM FEATURE: Scans the extended interaction history to find the most 
+        relevant security context, ensuring maximum contextual intelligence.
         """
         if not self.history:
             return None
-        # Reverse scan to find the most recent specific cyber intent
         for interaction in reversed(self.history):
             intent = interaction["intent_type"]
             if intent in ["sql", "command", "file", "crypto", "xss", "brute", "csrf"]:
@@ -167,9 +166,8 @@ class ASTDeepAnalyzer:
                     for keyword in getattr(node, 'keywords', []):
                         if keyword.arg == 'shell':
                             if isinstance(keyword.value, ast.Constant) and keyword.value.value is True:
-                                is_shell_true = True
-                    if is_shell_true or node.func.attr == 'system':
-                        findings.append({"type": "ShellCommandInjection", "severity": "CRITICAL", "details": f"Subprocess invocation via '{node.func.attr}' allows host injection.", "line": getattr(node, 'lineno', 1)})
+                                import_shell_true = True
+                    findings.append({"type": "ShellCommandInjection", "severity": "CRITICAL", "details": f"Subprocess invocation via '{node.func.attr}' allows host injection.", "line": getattr(node, 'lineno', 1)})
 
             if isinstance(node, ast.Assign):
                 for target in node.targets:
@@ -479,45 +477,50 @@ else:
     st.caption("Production Grade Monolith Implementation — Public User Workspace")
     st.markdown("---")
 
-    # Tier Plan Selection Configuration
+    # Cleaned and streamlined sidebar layout
     with st.sidebar:
-        st.header("💎 Choose Your Subscription Plan")
+        st.header("💎 Subscription Account Plan")
         selected_plan = st.radio(
             "Select Account Tier Level:",
-            ["FREE (Limited Brainpower, Raw Outputs)", "PREMIUM ($10/Mo - Deep Context, High Intelligence)"],
+            ["FREE Tier (Throttled & Limited Model)", "PREMIUM Tier ($10/Mo - Full Core Vault)"],
             index=0
         )
         current_tier = "FREE" if "FREE" in selected_plan else "PREMIUM"
         
+        st.markdown("---")
         if current_tier == "FREE":
-            st.info("ℹ️ Account Tier: FREE active. Prompt rate limits are throttled strictly. Hebrew input language processing disabled.")
+            st.info("ℹ️ FREE Account Active: Bandwidth limits are tightly throttled. Hebrew parsing and multi-turn conversational memory are restricted.")
         else:
-            st.success("🌟 Account Tier: PREMIUM active! Accessing deep-context architectural cybersecurity blueprints.")
+            st.success("🌟 PREMIUM Mode Active: Accessing multi-turn deep memory vaults and cryptographic production blueprints.")
             st.markdown("---")
-            st.markdown("### 💰 Premium Account Billing")
-            if st.button("💳 BUY PREMIUM LICENSE — $10.00", type="primary"):
-                st.toast("Processing Cryptographic Handshake via Merchant API...", icon="🔄")
-                time.sleep(0.5)
-                st.info("🔒 Secure Gate Open: To finalize your production license subscription, please contact the founder (Developer, Age 12) via direct corporate email/social channels to securely settle the payment gateway invoice via PayPal / Wire Transfer. Thank you for empowering tomorrow's cyber leaders!")
+            st.markdown("### 💳 Quick-Checkout Gateway")
+            if st.button("🚀 UNLOCK PRODUCTION LICENSE — $10.00", type="primary"):
+                st.toast("Opening Secure Checkout Handshake Encryption...", icon="⚡")
+                time.sleep(0.4)
+                
+                # Highly aesthetic and professionally formatted checkout modal description box
+                st.success("""
+                ### 🔒 ENTERPRISE LICENSING GATEWAY OPENED
+                
+                Thank you for choosing our **Premium Defensive AI Engine**. Your license structure key is ready to deploy.
+                
+                **💎 Premium Architecture Features Included:**
+                * 🧠 **Deep Context Memory Vault** — Tracks up to 20 conversation sessions.
+                * ⚡ **Zero-Throttling Execution** — Unlocks full network pipeline limits.
+                * 🛡️ **Bilingual Cognitive Analysis** — Complete native English & Hebrew support.
+                * 📦 **Enterprise Grade Blueprints** — High-security code snippets with full error-handling frameworks.
+                
+                ---
+                *To settle the payment ledger invoice safely via PayPal or secure Wire Transfer, please contact the founder and Lead Software Architect (Age 12) via corporate direct channels.*
+                """)
 
         st.markdown("---")
-        st.header("⚡ Live SIEM Infrastructure")
-        st.text_input("Tracked Client IP", value=st.session_state.client_ip, disabled=True)
-        st.text_input("Cryptographic Session ID", value=st.session_state.session_id[:20] + "...", disabled=True)
-        
+        st.header("📊 Threat State Monitor")
         analytics = memory_vault.get_session_analytics()
-        st.metric(label="Total Interaction History Nodes", value=analytics["total_interactions"])
         risk_score = analytics["accumulated_risk_score"]
-        
-        if risk_score > 7.0: st.error(f"🔴 System State: HIGH RISK ({risk_score:.2f})")
-        elif risk_score > 0.0: st.warning(f"🟡 System State: ELEVATED RISK ({risk_score:.2f})")
-        else: st.success(f"🟢 System State: NOMINAL SECURE (0.00)")
-            
-        if st.button("Flush Session & Clear State", type="secondary"):
-            st.session_state.session_id = st.session_state.security_context.establish_session(
-                st.session_state.client_ip, st.session_state.client_ua
-            )
-            st.rerun()
+        if risk_score > 7.0: st.error(f"🔴 STATE: HIGH CRITICAL RISK ({risk_score:.2f})")
+        elif risk_score > 0.0: st.warning(f"🟡 STATE: ELEVATED RISK ({risk_score:.2f})")
+        else: st.success(f"🟢 STATE: NOMINAL SECURE (0.00)")
 
     col_workspace, col_siem_dashboard = st.columns([1, 1])
 
@@ -544,7 +547,7 @@ else:
                 )
                 
             if not rate_limit_passed:
-                st.error(f"🚨 CRITICAL RATE LIMIT BREACH: [{current_tier} TIER CAP REACHED]. Upgrade to premium or wait to restore transaction bandwidth.")
+                st.error(f"🚨 CRITICAL RATE LIMIT BREACH: [{current_tier} TIER CAP REACHED]. Upgrade to premium to restore transaction bandwidth.")
             else:
                 try:
                     sanitized_prompt = MultiTierInputValidator.sanitize_string(user_prompt)
@@ -557,7 +560,7 @@ else:
                         findings_report = st.session_state.code_analyzer.analyze(code_input_area)
                         threat_matrix_profile = DynamicThreatModeler.build_matrix(findings_report, memory_vault.global_risk_weight)
                         
-                        # PREMIUM uses get_deep_context_intent() for scanning historical sessions
+                        # PREMIUM tier triggers the new multi-turn deep scan search algorithm
                         historical_intent_node = memory_vault.get_deep_context_intent() if current_tier == "PREMIUM" else None
                         derived_intent = st.session_state.generator.determine_intent(sanitized_prompt, historical_intent_node, current_tier)
                         secured_output_blueprint = st.session_state.generator.synthesize_secure_code(derived_intent, current_tier)
