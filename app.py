@@ -24,7 +24,7 @@ logger = logging.getLogger("AdvancedDefensiveAI")
 # 2. STATEFUL CONTEXT & CONVERSATIONAL MEMORY MANAGEMENT
 # =====================================================================
 class AdvancedConversationMemory:
-    def __init__(self, max_history_len: int = 20):  # Increased memory to 20 nodes
+    def __init__(self, max_history_len: int = 20):
         self.history: List[Dict[str, Any]] = []
         self.max_history_len = max_history_len
         self.global_risk_weight: float = 0.0
@@ -46,10 +46,6 @@ class AdvancedConversationMemory:
             self.global_risk_weight += 5.0
 
     def get_deep_context_intent(self) -> Optional[str]:
-        """
-        PREMIUM FEATURE: Scans the extended interaction history to find the most 
-        relevant security context, ensuring maximum contextual intelligence.
-        """
         if not self.history:
             return None
         for interaction in reversed(self.history):
@@ -101,7 +97,11 @@ class EnterpriseSecurityContext:
         attempt_hash = hashlib.pbkdf2_hmac('sha256', password_attempt.encode(), self._admin_salt, 50000).hex()
         return hmac.compare_digest(self._admin_password_hash, attempt_hash)
 
-    def enforce_sliding_window_rate_limit(self, client_id: str, max_reqs: int = 5, window: int = 15) -> bool:
+    def enforce_sliding_window_rate_limit(self, client_id: str, max_reqs: int = 15, window: int = 86400) -> bool:
+        """
+        ENHANCED RATE LIMITER: Restricts the user to exactly 15 successful requests 
+        per rolling 24-hour window (86400 seconds) for ultimate production stability.
+        """
         now = time.time()
         if client_id not in self.rate_limits:
             self.rate_limits[client_id] = []
@@ -162,11 +162,6 @@ class ASTDeepAnalyzer:
 
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
                 if node.func.attr in ['Popen', 'run', 'system'] or (isinstance(node.func.value, ast.Name) and node.func.value.id == 'os' and node.func.attr == 'system'):
-                    is_shell_true = False
-                    for keyword in getattr(node, 'keywords', []):
-                        if keyword.arg == 'shell':
-                            if isinstance(keyword.value, ast.Constant) and keyword.value.value is True:
-                                import_shell_true = True
                     findings.append({"type": "ShellCommandInjection", "severity": "CRITICAL", "details": f"Subprocess invocation via '{node.func.attr}' allows host injection.", "line": getattr(node, 'lineno', 1)})
 
             if isinstance(node, ast.Assign):
@@ -215,14 +210,8 @@ class DynamicThreatModeler:
 # =====================================================================
 class SmartDefensiveGenerator:
     def __init__(self):
-        # Ultra Hardened Premium Blueprints (Enterprise Production Architecture)
         self.premium_blueprints = {
             "sql": '''def execute_secure_database_query(db_connection, client_supplied_id: int) -> dict:
-    """
-    [ULTRA PREMIUM BLUEPRINT - SQL INJECTION DEFENSE]
-    Enforces strict typing constraint validation combined with full cryptographic 
-    abstraction layer using isolated Parameterized Queries bind arrays.
-    """
     import logging
     try:
         sanitized_id = int(client_supplied_id)
@@ -237,55 +226,33 @@ class SmartDefensiveGenerator:
         logging.error(f"Security Alert: Data type boundary exception intercepted: {str(type_err)}")
         return {"status": "Error: Invalid parameter syntax provided."}
     except Exception:
-        logging.critical("Fatal Database Abstract Intercept triggered securely.")
         return {"status": "Error: Internal server processing error."}''',
             
             "command": '''def execute_secure_network_diagnostic(target_destination: str) -> str:
-    """
-    [ULTRA PREMIUM BLUEPRINT - COMMAND INJECTION PROTECTION]
-    Neutralizes remote host shell code interpolation threats via input alphanumeric regex whitelisting 
-    and complete programmatic removal of system execution interpreter layers.
-    """
     import subprocess, re
     if not re.match(r"^[a-zA-Z0-9.-]+$", target_destination.strip()):
         raise PermissionError("Security Exception: Malicious command characters detected inside sequence payload.")
-    
     try:
         result = subprocess.run(
             ["ping", "-c", "2", target_destination.strip()], 
             capture_output=True, text=True, shell=False, timeout=5, check=True
         )
         return result.stdout
-    except subprocess.TimeoutExpired:
-        return "Diagnostic Error: Operation execution window timed out."
-    except subprocess.CalledProcessError as cmd_err:
-        return f"Execution Error Code [{cmd_err.returncode}]: Output terminal context unavailable."''',
+    except Exception as e:
+        return f"Execution Error: Context unavailable: {str(e)}"''',
             
             "file": '''def secure_file_retrieval(user_requested_path: str, storage_root: str = "/app/user_space") -> str:
-    """
-    [ULTRA PREMIUM BLUEPRINT - DIRECTORY TRAVERSAL SANITIZATION]
-    Mitigates dynamic file retrieval path escaping sequences (../) by enforcing runtime 
-    canonical absolute directory layout mapping checks.
-    """
     import os
     base_directory = os.path.abspath(storage_root)
     computed_target_path = os.path.abspath(os.path.join(base_directory, user_requested_path))
-    
     if not computed_target_path.startswith(base_directory):
         raise PermissionError("Access Violation Alert: Virtual machine sandbox traversal container escape blocked.")
-        
     if not os.path.exists(computed_target_path):
         raise FileNotFoundError("Requested asset node cannot be located inside server storage index.")
-        
     with open(computed_target_path, 'r', encoding='utf-8', errors='ignore') as active_file:
         return active_file.read()''',
             
             "crypto": '''def hash_password_pbkdf2(password_string: str) -> str:
-    """
-    [ULTRA PREMIUM BLUEPRINT - CRYPTOGRAPHIC HASH DERIVATION]
-    Utilizes advanced high-entropy PBKDF2-HMAC-SHA256 computational derivation matrices.
-    Applies dedicated pseudo-random salts to completely eliminate rainbow-table attack profiles.
-    """
     import hashlib, os, secrets
     salt_vector = secrets.token_bytes(32)
     derived_key = hashlib.pbkdf2_hmac(
@@ -297,73 +264,46 @@ class SmartDefensiveGenerator:
     return f"pbkdf2_sha256$100000${salt_vector.hex()}${derived_key.hex()}"''',
 
             "xss": '''def sanitize_html_output(untrusted_user_input: str) -> str:
-    """
-    [ULTRA PREMIUM BLUEPRINT - REFLECTED & STORED XSS BLOCKER]
-    Deconstructs dangerous client payload injections using multi-layered null-byte scrubbing
-    and context-aware strict HTML entity encoding matrices.
-    """
     import html, re
     if not untrusted_user_input or not untrusted_user_input.strip():
         return ""
-        
     scrubbed_payload = untrusted_user_input.replace("\\x00", "").strip()
     scrubbed_payload = re.sub(r"(?i)<script[^>]*>.*?</script>", "", scrubbed_payload)
     return html.escape(scrubbed_payload, quote=True)''',
 
             "brute": '''def verify_login_with_rate_limiting(username: str, client_ip: str, cache_connection) -> bool:
-    """
-    [ULTRA PREMIUM BLUEPRINT - BRUTE FORCE RATE CONTROLLER]
-    Deploys a robust time-series ledger sliding-window mechanism tracking login authorization pipelines.
-    Guards authentication routes against high-velocity automated account takeover scripts.
-    """
     import time, logging
     current_epoch_time = time.time()
     tracking_window_key = f"auth_rate_limit:ip:{client_ip}"
     historical_attempts_ledger = cache_connection.get_attempts(tracking_window_key, since=current_epoch_time - 60)
-    
     if len(historical_attempts_ledger) >= 5:
-        logging.warning(f"Security Alert: Excessive authentication attempts blocked from Client IP {client_ip}")
-        raise PermissionError("Access Temporarily Locked: Too many consecutive request parameters within 60s window.")
-        
+        raise PermissionError("Access Temporarily Locked: Too many consecutive requests.")
     return True''',
 
             "csrf": '''def generate_and_verify_csrf_token(session_context: dict, client_token: str = None) -> str:
-    """
-    [ULTRA PREMIUM BLUEPRINT - CROSS-SITE REQUEST FORGERY SHIELD]
-    Generates and maps high-entropy anti-forgery request signature tokens tied directly to cryptographic session contexts.
-    Utilizes constant-time token verification matrices to block side-channel comparison attacks.
-    """
     import secrets, hmac
     if client_token is None:
         cryptographic_token = secrets.token_hex(32)
         session_context["secure_csrf_secret_key"] = cryptographic_token
         return cryptographic_token
-        
     server_cached_token = session_context.get("secure_csrf_secret_key", "")
-    if not server_cached_token:
-        raise PermissionError("Security Handshake Refused: Context session token signature is missing.")
-        
-    if not hmac.compare_digest(server_cached_token, client_token):
-        raise PermissionError("CSRF Attack Vector Triggered: Form challenge response validation has failed.")
-        
+    if not server_cached_token or not hmac.compare_digest(server_cached_token, client_token):
+        raise PermissionError("CSRF Attack Vector Triggered: Validation has failed.")
     return "HANDSHAKE_VERIFIED"'''
         }
         
-        # Free Grade Blueprints (Low Accuracy, Bad Formatting, Raw/Unfinished Scripts)
         self.free_blueprints = {
-            "sql": '''# FREE VERSION: Basic casting. Might crash or fail under edge cases.\ndef quick_sql(user_id):\n    # Alert: Upgrade to Premium for parameterized query protection\n    return f"SELECT * FROM users WHERE id = {int(user_id)}"''',
-            "command": '''# FREE VERSION: Incomplete regex checker. Dangerous primitive bypasses possible.\ndef basic_ping(ip):\n    import os\n    # Highly unrecommended. Premium subscription replaces os.system completely.\n    os.system("ping -c 1 " + ip)''',
-            "file": '''# FREE VERSION: Only strips simple dots. Vulnerable to nested traversal attacks.\ndef simple_read(path):\n    # Upgrade to Premium to block advanced directory traversal validation\n    clean_path = path.replace("../", "")\n    return open(clean_path).read()''',
-            "crypto": '''# FREE VERSION: Obsolete cryptography algorithm standard.\ndef weak_md5_hash(password):\n    import hashlib\n    # WARNING: MD5 has critical structural cryptographic collision bugs!\n    return hashlib.md5(password.encode()).hexdigest()''',
-            "xss": '''# FREE VERSION: Basic tag replacement filter.\ndef raw_replace(text):\n    # Flawed. Does not neutralize advanced nested XSS vectors\n    return text.replace("<script>", "")''',
-            "brute": '''# FREE VERSION: Inefficient counter tracking logic\ndef basic_count(user):\n    print("Log: checking attempts without distributed cluster cache sync.")\n    return True''',
-            "csrf": '''# FREE VERSION: Dummy placeholder structure\ndef bypass_csrf():\n    return "CSRF verification disabled in FREE tier"'''
+            "sql": '''# FREE VERSION:\ndef quick_sql(user_id):\n    return f"SELECT * FROM users WHERE id = {int(user_id)}"''',
+            "command": '''# FREE VERSION:\ndef basic_ping(ip):\n    import os\n    os.system("ping -c 1 " + ip)''',
+            "file": '''# FREE VERSION:\ndef simple_read(path):\n    return open(path.replace("../", "")).read()''',
+            "crypto": '''# FREE VERSION:\ndef weak_md5_hash(password):\n    import hashlib\n    return hashlib.md5(password.encode()).hexdigest()''',
+            "xss": '''# FREE VERSION:\ndef raw_replace(text):\n    return text.replace("<script>", "")''',
+            "brute": '''# FREE VERSION:\ndef basic_count(user):\n    return True''',
+            "csrf": '''# FREE VERSION:\ndef bypass_csrf():\n    return "CSRF disabled in FREE tier"'''
         }
 
     def determine_intent(self, user_query: str, last_intent: Optional[str], plan_tier: str) -> str:
         query_clean = user_query.lower().strip()
-        
-        # Free Tier ignores Hebrew entirely (simulating lower model capabilities)
         if plan_tier == "FREE":
             if "xss" in query_clean: return "xss"
             if "brute" in query_clean or "limit" in query_clean: return "brute"
@@ -373,8 +313,6 @@ class SmartDefensiveGenerator:
             if "file" in query_clean or "path" in query_clean: return "file"
             if "crypto" in query_clean or "hash" in query_clean or "password" in query_clean: return "crypto"
             return "generic"
-            
-        # Premium Tier has high-brainpower bilingual mapping dictionary
         else:
             xss_keywords = ["xss", "cross-site scripting", "script injection", "html escape", "sanitize input", "גניבת עוגיות", "הזרקת סקריפט", "עוגיות", "סניטציה"]
             if any(w in query_clean for w in xss_keywords): return "xss"
@@ -390,7 +328,6 @@ class SmartDefensiveGenerator:
             if any(w in query_clean for w in file_keywords): return "file"
             crypto_keywords = ["crypto", "hash", "password", "encrypt", "sha", "md5", "salt", "הצפנה", "סיסמה", "האש", "להצפין"]
             if any(w in query_clean for w in crypto_keywords): return "crypto"
-            
             return last_intent if last_intent else "generic"
 
     def synthesize_secure_code(self, determined_intent: str, plan_tier: str) -> str:
@@ -477,54 +414,41 @@ else:
     st.caption("Production Grade Monolith Implementation — Public User Workspace")
     st.markdown("---")
 
-    # Cleaned and streamlined sidebar layout
+    # Cleaned, highly readable sidebar layout
     with st.sidebar:
-        st.header("💎 Subscription Account Plan")
+        st.header("💎 Subscription Plan")
         selected_plan = st.radio(
             "Select Account Tier Level:",
-            ["FREE Tier (Throttled & Limited Model)", "PREMIUM Tier ($10/Mo - Full Core Vault)"],
+            ["FREE Tier (Throttled Model)", "PREMIUM Tier ($10/Mo - Full Access)"],
             index=0
         )
         current_tier = "FREE" if "FREE" in selected_plan else "PREMIUM"
         
         st.markdown("---")
-        if current_tier == "FREE":
-            st.info("ℹ️ FREE Account Active: Bandwidth limits are tightly throttled. Hebrew parsing and multi-turn conversational memory are restricted.")
-        else:
-            st.success("🌟 PREMIUM Mode Active: Accessing multi-turn deep memory vaults and cryptographic production blueprints.")
-            st.markdown("---")
-            st.markdown("### 💳 Quick-Checkout Gateway")
-            if st.button("🚀 UNLOCK PRODUCTION LICENSE — $10.00", type="primary"):
-                st.toast("Opening Secure Checkout Handshake Encryption...", icon="⚡")
-                time.sleep(0.4)
-                
-                # Highly aesthetic and professionally formatted checkout modal description box
-                st.success("""
-                ### 🔒 ENTERPRISE LICENSING GATEWAY OPENED
-                
-                Thank you for choosing our **Premium Defensive AI Engine**. Your license structure key is ready to deploy.
-                
-                **💎 Premium Architecture Features Included:**
-                * 🧠 **Deep Context Memory Vault** — Tracks up to 20 conversation sessions.
-                * ⚡ **Zero-Throttling Execution** — Unlocks full network pipeline limits.
-                * 🛡️ **Bilingual Cognitive Analysis** — Complete native English & Hebrew support.
-                * 📦 **Enterprise Grade Blueprints** — High-security code snippets with full error-handling frameworks.
-                
-                ---
-                *To settle the payment ledger invoice safely via PayPal or secure Wire Transfer, please contact the founder and Lead Software Architect (Age 12) via corporate direct channels.*
-                """)
-
-        st.markdown("---")
         st.header("📊 Threat State Monitor")
         analytics = memory_vault.get_session_analytics()
         risk_score = analytics["accumulated_risk_score"]
-        if risk_score > 7.0: st.error(f"🔴 STATE: HIGH CRITICAL RISK ({risk_score:.2f})")
+        if risk_score > 7.0: st.error(f"🔴 STATE: CRITICAL RISK ({risk_score:.2f})")
         elif risk_score > 0.0: st.warning(f"🟡 STATE: ELEVATED RISK ({risk_score:.2f})")
-        else: st.success(f"🟢 STATE: NOMINAL SECURE (0.00)")
+        else: st.success(f"🟢 STATE: NOMINAL SECURE")
 
+    # Main Area Workspaces
     col_workspace, col_siem_dashboard = st.columns([1, 1])
 
     with col_workspace:
+        # Beautiful, permanent dashboard alert showing Premium upgrade on the main screen
+        if current_tier == "PREMIUM":
+            st.success("""
+            ### 🌟 PREMIUM MODEL FEATURES UNLOCKED
+            * 🧠 **Deep Memory Vault** (Tracks up to 20 past context loops)
+            * 🛡️ **Bilingual AI Processing** (Native Hebrew & English Support)
+            * 📦 **Production Blueprints** (Bulletproof snippet generation with built-in Exception handling)
+            
+            *To register your lifetime license, please contact the founder via direct channels to settle the $10 invoice via PayPal/Wire Transfer.*
+            """)
+        else:
+            st.info("ℹ️ Running on FREE Tier. Multi-turn context history, bilingual Hebrew parsing, and high-tier code generation are currently disabled.")
+
         st.header("🧠 Conversational Prompt Processing")
         default_prompt = "Give me code to prevent XSS attacks." if current_tier == "FREE" else "תראה לי קוד מאובטח שמנטרל תקיפות XSS"
         user_prompt = st.text_input("Enter your request:", value=default_prompt)
@@ -541,13 +465,13 @@ else:
         if execute_pipeline_trigger:
             rate_limit_passed = True
             if st.session_state.rate_limiting_enabled:
-                max_allowed_requests = 2 if current_tier == "FREE" else 5
+                # Strictly enforces 15 allowed requests max per rolling day window
                 rate_limit_passed = st.session_state.security_context.enforce_sliding_window_rate_limit(
-                    st.session_state.client_ip, max_reqs=max_allowed_requests, window=20
+                    st.session_state.client_ip, max_reqs=15, window=86400
                 )
                 
             if not rate_limit_passed:
-                st.error(f"🚨 CRITICAL RATE LIMIT BREACH: [{current_tier} TIER CAP REACHED]. Upgrade to premium to restore transaction bandwidth.")
+                st.error("🚨 CRITICAL RATE LIMIT BREACH: [Daily limit of 15 requests reached for this IP address]. Please wait or reset context to restore operational bandwidth.")
             else:
                 try:
                     sanitized_prompt = MultiTierInputValidator.sanitize_string(user_prompt)
@@ -560,7 +484,6 @@ else:
                         findings_report = st.session_state.code_analyzer.analyze(code_input_area)
                         threat_matrix_profile = DynamicThreatModeler.build_matrix(findings_report, memory_vault.global_risk_weight)
                         
-                        # PREMIUM tier triggers the new multi-turn deep scan search algorithm
                         historical_intent_node = memory_vault.get_deep_context_intent() if current_tier == "PREMIUM" else None
                         derived_intent = st.session_state.generator.determine_intent(sanitized_prompt, historical_intent_node, current_tier)
                         secured_output_blueprint = st.session_state.generator.synthesize_secure_code(derived_intent, current_tier)
