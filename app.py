@@ -158,7 +158,7 @@ class ASTDeepAnalyzer:
                     for keyword in getattr(node, 'keywords', []):
                         if keyword.arg == 'shell':
                             if isinstance(keyword.value, ast.Constant) and keyword.value.value is True:
-                                import_shell_true = True
+                                is_shell_true = True
                     if is_shell_true or node.func.attr == 'system':
                         findings.append({"type": "ShellCommandInjection", "severity": "CRITICAL", "details": f"Subprocess invocation via '{node.func.attr}' allows host injection.", "line": getattr(node, 'lineno', 1)})
 
@@ -204,7 +204,7 @@ class DynamicThreatModeler:
 
 
 # =====================================================================
-# 7. BLUEPRINT RULE-BASED DEFENSIVE PYTHON GENERATOR (BILINGUAL NLP LOGIC)
+# 7. EXPANDED BLUEPRINT DEFENSIVE ENGINE (7 ADVANCED CYBER BLUEPRINTS)
 # =====================================================================
 class SmartDefensiveGenerator:
     def __init__(self):
@@ -213,7 +213,6 @@ class SmartDefensiveGenerator:
     """
     [DYNAMIC SECURE BLUEPRINT - SQL INJECTION DEFENSE]
     Implements mandatory Parameterized Queries to block SQLi.
-    The abstraction engine separates execution code from untrusted user input parameters.
     """
     import logging
     try:
@@ -222,37 +221,35 @@ class SmartDefensiveGenerator:
             query = "SELECT account_id, balance, owner_name FROM accounts WHERE account_id = ?"
             cursor.execute(query, (sanitized_id,))
             row = cursor.fetchone()
-            if row:
-                return {"account_id": row[0], "balance": row[1], "owner_name": row[2]}
+            if row: return {"account_id": row[0], "balance": row[1]}
             return None
     except Exception:
-        logging.error("Internal transaction failure occurred securely shielded.")
+        logging.error("Internal database layer error masked.")
         return None''',
             
             "command": '''def execute_secure_network_diagnostic(target_destination: str) -> str:
     """
     [DYNAMIC SECURE BLUEPRINT - COMMAND INJECTION DEFENSE]
-    Enforces Strict Alphanumeric Regular Expression Whitelisting and disables shell execution wrappers.
+    Enforces Strict Regular Expression Whitelisting and completely isolates subprocess host context.
     """
     import subprocess, re
     if not re.match(r"^[a-zA-Z0-9.-]+$", target_destination):
-        raise ValueError("Security Violation: Invalid diagnostic target syntax.")
+        raise ValueError("Security Violation: Illegal characters detected.")
     
-    # shell=False isolates execution environment completely from OS interpreter shell vulnerabilities
     result = subprocess.run(["ping", "-c", "2", target_destination], capture_output=True, text=True, shell=False, timeout=5)
     return result.stdout''',
             
             "file": '''def secure_file_retrieval(user_requested_path: str, storage_root: str = "/app/user_space") -> str:
     """
     [DYNAMIC SECURE BLUEPRINT - PATH TRAVERSAL DEFENSE]
-    Resolves absolute execution paths on the host OS to prevent dynamic container escape sequences (../).
+    Resolves canonical absolute paths to eliminate path escaping injection attacks (../).
     """
     import os
     base = os.path.abspath(storage_root)
     target = os.path.abspath(os.path.join(base, user_requested_path))
     
     if not target.startswith(base):
-        raise PermissionError("Access Denied: Path Traversal Escape Intruders Blocked!")
+        raise PermissionError("Access Denied: Path Traversal Intercepted.")
         
     with open(target, 'r', encoding='utf-8') as f:
         return f.read()''',
@@ -260,37 +257,93 @@ class SmartDefensiveGenerator:
             "crypto": '''def hash_password_pbkdf2(password_string: str) -> str:
     """
     [DYNAMIC SECURE BLUEPRINT - WEAK CRYPTO DEFENSE]
-    Enforces adaptive Key Derivation via PBKDF2-HMAC-SHA256 reinforced with cryptographically secure salts.
-    Replaces collision-prone, broken legacy hashing structures like MD5 or SHA-1.
+    Replaces collision-prone algorithms (MD5, SHA1) with PBKDF2 adaptive derivation + unique salts.
     """
     import hashlib, os
     salt = os.urandom(32)
     key = hashlib.pbkdf2_hmac('sha256', password_string.encode(), salt, 100000)
-    return f"{salt.hex()}:{key.hex()}"'''
+    return f"{salt.hex()}:{key.hex()}"''',
+
+            "xss": '''def sanitize_html_output(untrusted_user_input: str) -> str:
+    """
+    [DYNAMIC SECURE BLUEPRINT - XSS MITIGATION]
+    Enforces context-aware HTML entity encoding to neutralize Cross-Site Scripting injection blocks.
+    Converts characters like <, >, &, ", ' into safe rendered constants.
+    """
+    import html
+    if not untrusted_user_input:
+        return ""
+    # Strip dangerous Null-bytes and run full structural HTML escape conversion
+    clean_step = untrusted_user_input.replace("\x00", "")
+    return html.escape(clean_step, quote=True)''',
+
+            "brute": '''def verify_login_with_rate_limiting(username: str, client_ip: str, cache_connection) -> bool:
+    """
+    [DYNAMIC SECURE BLUEPRINT - BRUTE FORCE & DDOS MITIGATION]
+    Implements a sliding-window rate tracking algorithm using an in-memory ledger.
+    Blocks authentication pipelines if an threshold breach occurs.
+    """
+    import time
+    now = time.time()
+    tracking_key = f"rate:login:{client_ip}"
+    
+    # Simulate fetching attempts list inside timeframe window (e.g., last 60 seconds)
+    failed_attempts = cache_connection.get_attempts(tracking_key, since=now - 60)
+    if len(failed_attempts) >= 5:
+        raise PermissionError("Account Locked: Too many auth attempts. Please wait.")
+        
+    return True''',
+
+            "csrf": '''def generate_and_verify_csrf_token(session_context: dict, client_token: str = None) -> str:
+    """
+    [DYNAMIC SECURE BLUEPRINT - CSRF PREVENTION]
+    Generates and maps high-entropy unique tokens tied directly to the cryptographically active user session.
+    Prevents unauthorized state-changing cross-site request action duplication.
+    """
+    import secrets, hmac
+    if client_token is None:
+        # Step 1: Generate a fresh token for a form presentation layer
+        new_token = secrets.token_hex(32)
+        session_context["csrf_secret"] = new_token
+        return new_token
+        
+    # Step 2: Validate incoming request parameters against internal session states
+    server_token = session_context.get("csrf_secret", "")
+    if not server_token or not hmac.compare_digest(server_token, client_token):
+        raise PermissionError("Cross-Site Request Forgery Guard Triggered: Tokens mismatched.")
+    return "VALIDATED"'''
         }
 
     def determine_intent(self, user_query: str, last_intent: Optional[str]) -> str:
         query_clean = user_query.lower().strip()
         
-        # 📂 1. Intent Context Detection: Database & Queries (SQL)
-        sql_keywords = ["sql", "db", "database", "query", "select", "insert", "בסיס נתונים", "שאילתה", "מסד", "נתונים", "דאטה", "מערכת משתמשים", "טבלה"]
-        if any(w in query_clean for w in sql_keywords): 
-            return "sql"
+        # 📂 1. XSS Detection
+        xss_keywords = ["xss", "cross-site scripting", "script injection", "html escape", "sanitize input", "גניבת עוגיות", "הזרקת סקריפט", "עוגיות", "סניטציה"]
+        if any(w in query_clean for w in xss_keywords): return "xss"
+
+        # 📂 2. Brute Force & Rate Limit Detection
+        brute_keywords = ["brute force", "rate limit", "ddos", "login block", "attempts", "הצפה", "חסימת משתמש", "ניחוש סיסמה", "מגבלת בקשות", "ברוט פורס"]
+        if any(w in query_clean for w in brute_keywords): return "brute"
+
+        # 📂 3. CSRF Detection
+        csrf_keywords = ["csrf", "cross-site request forgery", "xsrf", "form token", "זיוף בקשה", "טוקן", "טפסים מאובטחים"]
+        if any(w in query_clean for w in csrf_keywords): return "csrf"
+
+        # 📂 4. SQL Injection Detection
+        sql_keywords = ["sql", "db", "database", "query", "select", "בסיס נתונים", "שאילתה", "מסד", "נתונים"]
+        if any(w in query_clean for w in sql_keywords): return "sql"
             
-        # 📂 2. Intent Context Detection: System Executions & Network (Command Injection)
-        command_keywords = ["command", "os", "subprocess", "ping", "terminal", "run", "cmd", "טרמינל", "פקודה", "פינג", "להריץ", "תשתית", "מערכת ההפעלה"]
-        if any(w in query_clean for w in command_keywords): 
-            return "command"
+        # 📂 5. Command Injection Detection
+        command_keywords = ["command", "os", "subprocess", "ping", "terminal", "run", "טרמינל", "פקודה", "פינג", "להריץ"]
+        if any(w in query_clean for w in command_keywords): return "command"
             
-        # 📂 3. Intent Context Detection: File Operations & Paths (Path Traversal)
-        file_keywords = ["file", "path", "read", "open", "folder", "directory", "קובץ", "לקרוא קובץ", "נתיב", "תיקייה", "לפתוח", "טקסט", "אחסון"]
-        if any(w in query_clean for w in file_keywords): 
-            return "file"
+        # 📂 6. Path Traversal Detection
+        file_keywords = ["file", "path", "read", "open", "directory", "קובץ", "לקרוא קובץ", "נתיב", "תיקייה"]
+        if any(w in query_clean for w in file_keywords): return "file"
             
-        # 📂 4. Intent Context Detection: Passwords, Hashing & Secrets (Weak Crypto)
-        crypto_keywords = ["crypto", "hash", "password", "encrypt", "sha", "md5", "salt", "הצפנה", "סיסמה", "האש", "להצפין", "סודיות", "מפתח קריפטוגרפי"]
-        if any(w in query_clean for w in crypto_keywords): 
-            return "crypto"
+        # 📂 7. Weak Cryptography Detection
+        crypto_keywords = ["crypto", "hash", "password", "encrypt", "sha", "md5", "הצפנה", "סיסמה", "האש", "להצפין"]
+        if any(w in query_clean for w in crypto_keywords): return "crypto"
             
         return last_intent if last_intent else "generic"
 
@@ -320,13 +373,10 @@ if not st.session_state.session_id:
 
 memory_vault = st.session_state.security_context.get_memory(st.session_state.session_id)
 
-# 🌐 URL Analysis for Enforced RBAC Routing Gateways
 url_parameters = st.query_params
 is_url_admin_mode = url_parameters.get("page") == "admin"
 
-# =====================================================================
-# 🔑 PRIVILEGED ADMIN GATE INTERFACE (Triggered via ?page=admin)
-# =====================================================================
+# --- ADMIN ROUTING INTERFACE ---
 if is_url_admin_mode:
     st.title("🔑 Secret Admin Gate — Identity Verification")
     st.caption("Privileged routing detected via URL parameters. Cryptographic handshake required.")
@@ -343,22 +393,18 @@ if is_url_admin_mode:
                     st.rerun()
                 else:
                     st.error("Authentication Failure: Invalid Secret Signatures.")
-            
             if st.button("← Return to Public Main Site"):
                 st.query_params.clear() 
                 st.rerun()
     else:
         st.header("👑 WELCOME BACK MASTER ADMIN")
         st.success("RBAC Status: FULL PRIVILEGED AUTHORIZATION ACTIVE")
-        
         if st.button("🚪 Logout & Return to Main Site", type="secondary"):
             st.session_state.is_admin = False
             st.query_params.clear()
             st.rerun()
-            
         st.markdown("---")
         st.subheader("🖥️ Dynamic System Overrides & Master Telemetry")
-        
         adm_col1, adm_col2, adm_col3 = st.columns(3)
         with adm_col1:
             st.markdown("**Infrastructure Overrides**")
@@ -376,18 +422,13 @@ if is_url_admin_mode:
                 "Rate_Limit_Trackers": len(st.session_state.security_context.rate_limits),
                 "Client_IP_Signature": st.session_state.client_ip
             })
-            
         st.markdown("---")
         st.subheader("📋 SIEM Global Master Logs Feed")
         historical_log_nodes = memory_vault.history
-        if historical_log_nodes:
-            st.dataframe(historical_log_nodes, use_container_width=True)
-        else:
-            st.caption("No transaction nodes captured inside current session pipeline.")
+        if historical_log_nodes: st.dataframe(historical_log_nodes, use_container_width=True)
+        else: st.caption("No transaction nodes captured inside current session pipeline.")
 
-# =====================================================================
-# 🛡️ STANDARD PUBLIC WORKSPACE INTERFACE
-# =====================================================================
+# --- STANDARD PUBLIC WORKSPACE INTERFACE ---
 else:
     st.title("🛡️ Enterprise Defensive AI Hub & SOC Radar Dashboard")
     st.caption("Production Grade Monolith Implementation — Public User Workspace")
@@ -402,12 +443,9 @@ else:
         st.metric(label="Total Interaction History Nodes", value=analytics["total_interactions"])
         risk_score = analytics["accumulated_risk_score"]
         
-        if risk_score > 7.0:
-            st.error(f"🔴 System State: HIGH RISK ({risk_score:.2f})")
-        elif risk_score > 0.0:
-            st.warning(f"🟡 System State: ELEVATED RISK ({risk_score:.2f})")
-        else:
-            st.success(f"🟢 System State: NOMINAL SECURE (0.00)")
+        if risk_score > 7.0: st.error(f"🔴 System State: HIGH RISK ({risk_score:.2f})")
+        elif risk_score > 0.0: st.warning(f"🟡 System State: ELEVATED RISK ({risk_score:.2f})")
+        else: st.success(f"🟢 System State: NOMINAL SECURE (0.00)")
             
         if st.button("Flush Session & Clear State", type="secondary"):
             st.session_state.session_id = st.session_state.security_context.establish_session(
@@ -419,7 +457,7 @@ else:
 
     with col_workspace:
         st.header("🧠 Conversational Prompt Processing")
-        user_prompt = st.text_input("Enter your request:", value="Show me a secure strategy to query user data.")
+        user_prompt = st.text_input("Enter your request:", value="Give me code to prevent XSS attacks.")
         
         st.header("🔬 Code Asset Vulnerability Simulator")
         default_flawed_script = 'def unsafe_utility(payload):\n    import os\n    db_pass = "Secret123"\n    os.system("ping -c 1 " + payload)'
@@ -457,23 +495,18 @@ else:
                         
                         st.subheader("📈 STRIDE Resilience Calculation Score")
                         resilience_metric = threat_matrix_profile["resilience_index"]
-                        if resilience_metric >= 85.0:
-                            st.success(f"Security Health Index Score: {resilience_metric:.1f} / 100.0")
-                        else:
-                            st.error(f"Security Health Index Score: {resilience_metric:.1f} / 100.0 (Risks Found)")
+                        if resilience_metric >= 85.0: st.success(f"Security Health Index Score: {resilience_metric:.1f} / 100.0")
+                        else: st.error(f"Security Health Index Score: {resilience_metric:.1f} / 100.0 (Risks Found)")
                             
                         if findings_report:
                             st.markdown("### ⚠️ Active Vulnerabilities Detected")
                             for element in findings_report:
                                 st.markdown(f"**[{element['severity']}]** {element['type']}")
                                 st.caption(element["details"])
-                        else:
-                            st.success("✅ No structural vulnerabilities found in code fragment.")
+                        else: st.success("✅ No structural vulnerabilities found in code fragment.")
                             
                         st.markdown("### 🛡️ Hardened Safe-by-Design Python Implementation")
                         st.code(secured_output_blueprint, language="python")
                         
-                except ValueError as val_err:
-                    st.error(f"Validation Error: {str(val_err)}")
-        else:
-            st.info("Awaiting execution data trigger. Press the button to pass variables through the security layers.")
+                except ValueError as val_err: st.error(f"Validation Error: {str(val_err)}")
+        else: st.info("Awaiting execution data trigger. Press the button to pass variables through the security layers.")
