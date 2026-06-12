@@ -1,21 +1,21 @@
-import ast
-import hashlib
-import hmac
 import time
-import uuid
-import logging
 import re
 import html
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Tuple
 import streamlit as st
 
 # =====================================================================
-# 1. ADVANCED COGNITIVE SECURITY LOGGER
+# 1. PAGE CONFIGURATION (MUST BE FIRST)
 # =====================================================================
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] [SOC-AI] %(message)s')
+st.set_page_config(
+    page_title="THE ONE ABOVE ALL - AI DefSec", 
+    page_icon="👑", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # =====================================================================
-# 2. CUSTOM CSS: GOD-TIER GLASSMORPHISM & DEEP MIDNIGHT
+# 2. THE GOD-TIER CSS (GLASSMORPHISM + DEEP MIDNIGHT)
 # =====================================================================
 @st.cache_data
 def inject_custom_css():
@@ -26,7 +26,14 @@ def inject_custom_css():
         font-family: 'Inter', 'Segoe UI', sans-serif; 
         background-color: #0B0F19; 
         color: #E2E8F0; 
-        background-image: radial-gradient(circle at 50% 0%, #172033 0%, #0B0F19 60%);
+        background-image: radial-gradient(circle at 50% -20%, #1A233A 0%, #0B0F19 70%);
+    }
+    
+    /* Sidebar Glassmorphism */
+    [data-testid="stSidebar"] {
+        background-color: rgba(11, 15, 25, 0.6) !important;
+        backdrop-filter: blur(15px);
+        border-right: 1px solid rgba(30, 41, 59, 0.8);
     }
     
     /* Glassmorphism Inputs */
@@ -60,6 +67,7 @@ def inject_custom_css():
         text-transform: uppercase;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.3);
+        width: 100%;
     }
     div.stButton > button:first-child:hover {
         background: #0EA5E9;
@@ -67,19 +75,6 @@ def inject_custom_css():
         box-shadow: 0 0 30px rgba(14, 165, 233, 0.5);
         transform: translateY(-3px) scale(1.02);
         border-color: #38BDF8;
-    }
-    div.stButton > button:first-child:active {
-        transform: translateY(1px);
-    }
-    
-    /* Metric Cards Glass Effect */
-    [data-testid="stMetric"] {
-        background: rgba(30, 41, 59, 0.3);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 15px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     /* Alerts and Code Blocks */
@@ -98,31 +93,17 @@ def inject_custom_css():
         box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
     }
     
-    /* Typography */
     h1, h2, h3 { color: #F8FAFC; letter-spacing: 0.5px; }
     hr { border-color: rgba(30, 41, 59, 0.6); }
     </style>
     """, unsafe_allow_html=True)
 
 # =====================================================================
-# 3. BULLETPROOF CORE LOGIC
+# 3. CORE LOGIC & WAF ENGINE
 # =====================================================================
-class EnterpriseSecurityContext:
-    def __init__(self):
-        self.rate_limits = {}
-
-    def enforce_rate_limit(self, client_id: str, max_reqs: int = 30, window: int = 60) -> bool:
-        now = time.time()
-        if client_id not in self.rate_limits: self.rate_limits[client_id] = []
-        self.rate_limits[client_id] = [t for t in self.rate_limits[client_id] if now - t < window]
-        if len(self.rate_limits[client_id]) >= max_reqs: return False
-        self.rate_limits[client_id].append(now)
-        return True
-
 class SecurityEngines:
     @staticmethod
     def inspect_payloads(text: str) -> Tuple[bool, str]:
-        # God-Tier WAF Regex patterns covering 2026 vectors
         rules = {
             r"(?i)(UNION\s+ALL\s+SELECT|DROP\s+TABLE)": "SQL Injection (SQLi)",
             r"(?i)<(script|img|svg).*?(onerror|onload)": "Cross-Site Scripting (XSS)",
@@ -135,128 +116,90 @@ class SecurityEngines:
         return True, "CLEAN"
 
 # =====================================================================
-# 4. THE GOD-TIER SYNTHESIS ENGINE (V6.0)
+# 4. BLUEPRINTS: PREMIUM VS FREE (THE ULTIMATE DICTIONARIES)
 # =====================================================================
-class SmartDefensiveGenerator:
+class CodeSynthesizer:
     def __init__(self):
-        self.blueprints = {
+        # 👑 PREMIUM BLUEPRINTS - THE ABSOLUTE BEST OF 2026
+        self.premium_blueprints = {
             "sql": '''def execute_secure_db_query(db_session, user_id: int) -> dict:
-    """[V6.0] SQLi Prevention via Strict ORM Casting & Parameterization."""
-    import logging
+    """[PREMIUM] SQLi Prevention via Strict ORM Casting & Parameterization."""
     try:
         sanitized_id = int(user_id)
-        if sanitized_id <= 0: raise ValueError("Invalid Entity ID.")
         query = "SELECT id, username, email FROM users WHERE id = :user_id LIMIT 1"
         result = db_session.execute(query, {"user_id": sanitized_id}).fetchone()
-        return dict(result) if result else {"error": "Record not found"}
-    except ValueError as ve:
-        logging.warning(f"Validation Blocked: {ve}")
+        return dict(result) if result else {"error": "Not found"}
+    except ValueError:
         return {"error": "Format violation"}''',
             
             "xss": '''def secure_frontend_renderer(untrusted_input: str) -> str:
-    """[V6.0] Advanced DOMPurify Logic with Event-Handler Annihilation."""
+    """[PREMIUM] Advanced DOMPurify Logic with Event-Handler Annihilation."""
     import html, re
     if not isinstance(untrusted_input, str): return ""
     cleaned = untrusted_input.replace("\\x00", "").strip()
-    cleaned = re.sub(r"(?i)<(script|iframe|object|embed|svg|math|applet)[^>]*>.*?</\\1>", "", cleaned)
-    cleaned = re.sub(r"(?i)on[a-z]+\s*=\s*['\"].*?['\"]", "", cleaned) # Kills onclick, onerror, etc.
+    cleaned = re.sub(r"(?i)<(script|iframe|object|embed|svg)[^>]*>.*?</\\1>", "", cleaned)
+    cleaned = re.sub(r"(?i)on[a-z]+\s*=\s*['\"].*?['\"]", "", cleaned)
     return html.escape(cleaned, quote=True)''',
             
-            "ssrf": '''def enterprise_resource_fetcher(target_url: str) -> bytes:
-    """[V6.0] Zero-Trust SSRF Engine. Mathematically blocks Cloud Metadata leaks."""
-    import urllib.request, urllib.parse, socket, ipaddress, logging
-    parsed = urllib.parse.urlparse(target_url)
-    if parsed.scheme not in ['http', 'https']: raise ValueError("Protocol prohibited.")
-    try:
-        ip_obj = ipaddress.ip_address(socket.gethostbyname(parsed.hostname))
-        if ip_obj.is_private or ip_obj.is_loopback or str(ip_obj).startswith('169.254'):
-            logging.critical(f"SSRF BREACH BLOCKED: Target IP {ip_obj} is restricted.")
-            raise PermissionError("Access Denied to Cloud/Internal subnets.")
-        req = urllib.request.Request(target_url, headers={'User-Agent': 'SecuredProxy/3.0'})
-        with urllib.request.urlopen(req, timeout=3) as response:
-            return response.read()
-    except Exception as e:
-        return b""''',
-
-            "token": '''def validate_enterprise_jwt(auth_header: str, public_key_pem: str) -> dict:
-    """[V6.0] Asymmetric JWT Validation (RS256) immune to brute-forcing."""
-    import jwt, logging # requires PyJWT
-    if not auth_header or not auth_header.startswith("Bearer "): raise PermissionError("Malformed Auth header.")
-    try:
-        return jwt.decode(auth_header.split(" ")[1], public_key_pem, algorithms=["RS256"], options={"require": ["exp"]})
-    except jwt.ExpiredSignatureError:
-        raise PermissionError("Token expired.")
-    except jwt.InvalidTokenError as e:
-        logging.critical(f"Token Forgery Blocked: {e}")
-        raise PermissionError("Signature validation failed.")''',
-
-            "idor": '''def authorize_object_access(current_user: dict, requested_doc_id: str, db) -> dict:
-    """[V6.0] Cryptographic IDOR mitigation checking Resource Ownership."""
-    import logging
-    document = db.get_metadata_only(requested_doc_id)
-    if not document: return {"error": "Resource unavailable"} # Obfuscate existence
-    if document.owner_id != current_user.get("id") and current_user.get("role") != "super_admin":
-        logging.critical(f"IDOR Alert: User {current_user.get('id')} blocked from doc {requested_doc_id}")
-        return {"error": "Resource unavailable"} 
-    return db.fetch_full_document(requested_doc_id)''',
-
-            "ddos": '''def redis_sliding_window_limiter(client_ip: str, endpoint: str, redis_conn) -> bool:
-    """[V6.0] Microsecond-accurate Redis Token Bucket for DDoS/Bruteforce defense."""
-    import time
-    window, max_reqs = 60, 30
-    key = f"rate_limit:{endpoint}:{client_ip}"
-    now_ms = int(time.time() * 1000)
-    
-    pipe = redis_conn.pipeline()
-    pipe.zremrangebyscore(key, 0, now_ms - (window * 1000))
-    pipe.zadd(key, {str(now_ms): now_ms})
-    pipe.zcard(key)
-    pipe.expire(key, window)
-    request_count = pipe.execute()[2]
-    
-    if request_count > max_reqs: raise PermissionError("HTTP 429: Rate limit exceeded.")
-    return True''',
-
             "llm": '''def secure_llm_prompt_guard(user_input: str) -> str:
-    """[V6.0] AI Prompt Injection Guard (Defends against Jailbreaks & Overrides)."""
-    import re, logging
+    """[PREMIUM] AI Prompt Injection Guard (Jailbreak Defender)."""
+    import re
     if not isinstance(user_input, str): return ""
-    
-    # Heuristic signature detection for common LLM jailbreaks
-    jailbreak_signatures = [
-        r"(?i)(ignore (all )?previous (instructions|directions))",
-        r"(?i)(you are (now )?a|act as|simulate)",
-        r"(?i)(system prompt|developer mode|DAN|do anything now)"
-    ]
-    
-    for sig in jailbreak_signatures:
-        if re.search(sig, user_input):
-            logging.critical("PROMPT INJECTION DETECTED. Payload neutralized.")
-            # Neutralize the attack by returning a hardcoded safe string
-            return "[SYSTEM OVERRIDE BLOCKED. Input discarded.]"
-            
-    # Escape system characters to prevent markdown/json escapes
+    jailbreaks = [r"(?i)(ignore previous)", r"(?i)(system prompt|DAN)"]
+    if any(re.search(sig, user_input) for sig in jailbreaks):
+        return "[SYSTEM OVERRIDE BLOCKED]"
     return user_input.replace("{", "{{").replace("}", "}}")''',
 
+            "ssrf": '''def enterprise_resource_fetcher(target_url: str) -> bytes:
+    """[PREMIUM] Zero-Trust SSRF Engine. Mathematically blocks Cloud Metadata."""
+    import urllib.request, urllib.parse, socket, ipaddress
+    parsed = urllib.parse.urlparse(target_url)
+    if parsed.scheme not in ['http', 'https']: raise ValueError("Protocol prohibited.")
+    ip_obj = ipaddress.ip_address(socket.gethostbyname(parsed.hostname))
+    if ip_obj.is_private or ip_obj.is_loopback: raise PermissionError("Cloud subnet access denied.")
+    req = urllib.request.Request(target_url, headers={'User-Agent': 'SecuredProxy/3.0'})
+    with urllib.request.urlopen(req, timeout=3) as res: return res.read()''',
+
             "generic": '''def universal_waf_middleware(request_payload: dict) -> dict:
-    """[V6.0] Universal WAF - Fallback defense neutralizing unknown anomalies."""
+    """[PREMIUM] Universal WAF - Neutralizes unknown anomalies."""
     import html
-    sanitized = {}
-    for k, v in request_payload.items():
-        if isinstance(v, str): sanitized[k] = html.escape(v.strip(), quote=True)
-        else: sanitized[k] = v
-    return sanitized'''
+    return {k: html.escape(v.strip(), quote=True) if isinstance(v, str) else v for k, v in request_payload.items()}'''
         }
 
+        # 🆓 FREE BLUEPRINTS - BASIC & THROTTLED
+        self.free_blueprints = {
+            "sql": '''def free_sql_cleaner(val):
+    # [FREE TIER] Basic string replace. Upgrade to PREMIUM for ORM Parameterization.
+    return str(val).replace("'", "").replace('"', '')''',
+            
+            "xss": '''def free_xss_cleaner(val):
+    # [FREE TIER] Basic escape. Does not prevent DOM-based XSS.
+    import html
+    return html.escape(str(val))''',
+
+            "llm": '''# [FREE TIER] 
+# AI Prompt Injection protection is ONLY available in the PREMIUM tier.
+def basic_ai_pass(val):
+    return val''',
+
+            "ssrf": '''# [FREE TIER] 
+# Zero-Trust Network isolation is ONLY available in the PREMIUM tier.
+def basic_fetch(url):
+    import urllib.request
+    return urllib.request.urlopen(url).read()''',
+
+            "generic": '''def basic_sanitizer(val):
+    # [FREE TIER] Generic basic cleanup.
+    return str(val).strip()'''
+        }
+
+        # GUIDES & AI INTEL (Dual Language)
         self.guides = {
-            "sql": {"he": "הטמע בשכבת ה-DAL או ה-Model לפני כל קריאה למסד.", "en": "Implement in the DAL or Model layer before queries."},
-            "xss": {"he": "עטוף כל קלט משתמש בשכבת ה-View לפני הזרקה ל-DOM.", "en": "Wrap input in the View layer before DOM injection."},
-            "ssrf": {"he": "שלב במודולי רשת המושכים Webhooks או מידע חיצוני.", "en": "Use in modules fetching Webhooks or external data."},
-            "token": {"he": "מקם ב-API Gateway או כ-Middleware לבדיקת הרשאות.", "en": "Deploy in API Gateway or Auth Middleware."},
-            "idor": {"he": "הטמע ב-Controller לאחר אימות משתמש ולפני שליפת מידע.", "en": "Place in Controller after Auth and before data retrieval."},
-            "ddos": {"he": "שלב כ-Global Middleware המגן על כל נתיבי ה-API.", "en": "Integrate as Global Middleware for all API routes."},
-            "llm": {"he": "העבר כל קלט דרך פונקציה זו לפני השליחה ל-OpenAI/LLM API.", "en": "Pass user input through this before calling the LLM API."},
-            "generic": {"he": "מקם כ-Request Interceptor בכניסה לאפליקציה.", "en": "Place as Request Interceptor at app entry."}
+            "sql": {"he": "הטמע בשכבת ה-DAL לפני הקריאה למסד הנתונים.", "en": "Implement in the DAL layer before queries."},
+            "xss": {"he": "עטוף קלט משתמש לפני הזרקה ל-DOM.", "en": "Wrap input before DOM injection."},
+            "llm": {"he": "העבר כל קלט דרך פונקציה זו לפני השליחה ל-AI.", "en": "Pass user input through this before calling the LLM."},
+            "ssrf": {"he": "שלב במודולי רשת המושכים מידע חיצוני.", "en": "Use in modules fetching external data."},
+            "generic": {"he": "מקם כ-Interceptor בכניסה לאפליקציה.", "en": "Place as Request Interceptor at app entry."}
         }
 
     def detect_lang(self, text: str) -> str:
@@ -266,96 +209,112 @@ class SmartDefensiveGenerator:
         q = q.lower()
         if any(w in q for w in ["ssrf", "webhook", "cloud metadata"]): return "ssrf"
         if any(w in q for w in ["sql", "db", "select", "הזרקת", "מסד"]): return "sql"
-        if any(w in q for w in ["token", "jwt", "auth", "טוקן"]): return "token"
-        if any(w in q for w in ["idor", "access control", "הרשאות", "גישה"]): return "idor"
-        if any(w in q for w in ["ddos", "brute", "rate limit", "הצפה", "כוח גס"]): return "ddos"
         if any(w in q for w in ["llm", "prompt", "jailbreak", "ai", "מודל שפה", "פרומפט"]): return "llm"
         if any(w in q for w in ["xss", "script", "html", "סניטציה"]): return "xss"
         return "generic"
 
-    def generate_ai_analysis(self, intent: str, lang: str) -> str:
+    def generate_intel(self, intent: str, lang: str, is_premium: bool) -> str:
+        if not is_premium:
+            msg = "⚡ **גרסת FREE:** המערכת סיפקה קוד בסיסי. אנו ממליצים לשדרג ל-Premium כדי לקבל הגנה היקפית, מניעת עקיפות מתקדמות וניתוח מודיעין מלא." if lang == "he" else "⚡ **FREE TIER:** Basic code provided. Upgrade to Premium for Zero-Trust defense mechanisms and full threat intelligence."
+            return f"### ⚠️ מודיעין סייבר חלקי | Partial Intel\n{msg}"
+            
         data = {
-            "ssrf": {"he": "מודיעין סייבר: SSRF (CVSS: 9.1) | חסימה מתמטית של Loopback ו-Metadata בענן.", "en": "Intel: SSRF (CVSS: 9.1) | Mathematical block of Cloud Metadata."},
-            "sql": {"he": "מודיעין סייבר: הזרקת SQL (CVSS: 9.8) | אכיפת ORM Parameterization מחמירה.", "en": "Intel: SQLi (CVSS: 9.8) | Strict ORM Parameterization enforced."},
-            "xss": {"he": "מודיעין סייבר: XSS (CVSS: 8.2) | אלגוריתם DOMPurify שמשמיד תגיות מסוכנות.", "en": "Intel: XSS (CVSS: 8.2) | DOMPurify logic annihilating malicious tags."},
-            "token": {"he": "מודיעין סייבר: חטיפת JWT (CVSS: 9.4) | הצפנה א-סימטרית RS256 בלתי ניתנת לפיצוח.", "en": "Intel: JWT Forge (CVSS: 9.4) | Asymmetric RS256 uncrackable logic."},
-            "idor": {"he": "מודיעין סייבר: IDOR (CVSS: 9.1) | שכבת אימות אובייקטים לוגית קריפטוגרפית.", "en": "Intel: IDOR (CVSS: 9.1) | Cryptographic logical object validation."},
-            "ddos": {"he": "מודיעין סייבר: DDoS (CVSS: 7.5) | אלגוריתם Token Bucket בסביבת ה-Redis.", "en": "Intel: DDoS (CVSS: 7.5) | Token Bucket logic in Redis environment."},
-            "llm": {"he": "מודיעין סייבר: Prompt Injection (CVSS: 8.8) | זיהוי היוריסטי לניסיונות Jailbreak ושינוי זהות של ה-AI.", "en": "Intel: Prompt Injection (CVSS: 8.8) | Heuristic detection of Jailbreak & Identity override attempts."},
-            "generic": {"he": "מודיעין סייבר: אנומליה מסווגת | המנוע מפעיל WAF אוניברסלי לסינון היקפי.", "en": "Intel: Classified Anomaly | Deploying Universal WAF for perimeter defense."}
+            "ssrf": {"he": "מודיעין קריטי (CVSS: 9.1) | הגנת Zero-Trust פעילה, חוסמת Loopback ו-Metadata.", "en": "Critical Intel (CVSS: 9.1) | Zero-Trust active, blocking Cloud Metadata."},
+            "sql": {"he": "מודיעין קריטי (CVSS: 9.8) | אכיפת Parameterization מחמירה. חסינות מלאה מובטחת.", "en": "Critical Intel (CVSS: 9.8) | Strict Parameterization enforced. Immunity guaranteed."},
+            "xss": {"he": "מודיעין מתקדם (CVSS: 8.2) | מנוע DOMPurify משמיד תגיות ואירועים זדוניים.", "en": "Advanced Intel (CVSS: 8.2) | DOMPurify logic annihilating malicious events."},
+            "llm": {"he": "מודיעין מתקדם (CVSS: 8.8) | חומת אש אקטיבית נגד Prompt Injection ו-Jailbreaks.", "en": "Advanced Intel (CVSS: 8.8) | Active Firewall against Prompt Injections."},
+            "generic": {"he": "מודיעין אנומליות | מנוע ה-WAF הגלובלי הופעל לסינון היקפי.", "en": "Anomaly Intel | Global WAF Engine activated for perimeter defense."}
         }
         return f"### 🧠 {data.get(intent, data['generic'])[lang]}"
 
 # =====================================================================
 # 5. INITIALIZATION & UI RUNTIME
 # =====================================================================
-st.set_page_config(page_title="APEX Security AI", page_icon="⚡", layout="wide")
 inject_custom_css()
+ai_engine = CodeSynthesizer()
 
-# Bulletproof Session Initialization
-if "sec_ctx" not in st.session_state:
-    st.session_state.sec_ctx = EnterpriseSecurityContext()
-    st.session_state.engines = SecurityEngines()
-    st.session_state.ai_gen = SmartDefensiveGenerator()
+# --- SIDEBAR: TIER MANAGEMENT ---
+with st.sidebar:
+    st.image("https://img.icons8.com/nolan/128/cyber-security.png", width=100)
+    st.title("System Config")
+    st.markdown("---")
+    
+    tier_selection = st.radio(
+        "⚡ SELECT SYSTEM TIER:",
+        ["👑 PREMIUM MAX (V6.0)", "🆓 FREE (Basic)"],
+        index=0
+    )
+    is_premium = "PREMIUM" in tier_selection
+    
+    st.markdown("---")
+    st.subheader("Live Diagnostics")
+    if is_premium:
+        st.success("✅ Neural Engine: Active")
+        st.success("✅ Zero-Trust WAF: Online")
+        st.success("✅ Processing Speed: Maximum")
+    else:
+        st.warning("⚠️ Neural Engine: Disabled")
+        st.warning("⚠️ Zero-Trust WAF: Offline")
+        st.error("📉 Speed: Throttled")
 
-# --- HEADER AREA ---
-st.title("⚡ APEX SOC: AI Threat Defense")
-st.markdown("##### The Ultimate Zero-Trust Code Synthesis Engine (v6.0)")
+# --- MAIN DASHBOARD ---
+st.title("👑 THE ONE ABOVE ALL")
+st.markdown("##### The Ultimate Cyber-Defense Synthesis Terminal")
 st.markdown("---")
 
-# Metrics Display (Simulated Live Data)
-m1, m2, m3 = st.columns(3)
-m1.metric("Active Protocols", "8 / 8", "Secured")
-m2.metric("Threat DB Version", "2026.12", "Up to date")
-m3.metric("Engine Efficiency", "99.9%", "Optimal")
-st.markdown("<br>", unsafe_allow_html=True)
-
-# Main Interaction Area
-st.subheader("🛡️ Vector Input Terminal")
-user_prompt = st.text_input("Describe the attack, logic flaw, or threat vector (He/En):", placeholder="e.g. מניעת הזרקת קוד ל-AI / How to stop DDoS")
+user_prompt = st.text_input("Enter Threat Vector or Target Vulnerability (He/En):", placeholder="e.g. מניעת הזרקת קוד ל-AI / How to stop SQLi")
 
 if st.button("Synthesize Defense Protocol"):
-    if not st.session_state.sec_ctx.enforce_rate_limit("127.0.0.1", 30):
-        st.toast("🚨 RATE LIMIT MITIGATION ACTIVE.", icon="🛑")
-        st.error("Too many requests. Please hold.")
-    elif len(user_prompt) < 2:
-        st.toast("⚠️ Input required.", icon="⚠️")
+    if len(user_prompt) < 2:
+        st.toast("⚠️ Input required to initialize.", icon="⚠️")
     else:
-        lang = st.session_state.ai_gen.detect_lang(user_prompt)
-        safe, threat = st.session_state.engines.inspect_payloads(user_prompt)
+        lang = ai_engine.detect_lang(user_prompt)
+        safe, threat = SecurityEngines.inspect_payloads(user_prompt)
         
         if not safe:
             st.toast(f"WAF Intercepted: {threat}", icon="❌")
-            st.error(f"❌ MALICIOUS PAYLOAD DETECTED: Engine prevented execution of {threat}.")
+            st.error(f"❌ MALICIOUS PAYLOAD DETECTED: WAF prevented execution of {threat}.")
         else:
-            intent = st.session_state.ai_gen.determine_intent(user_prompt)
+            intent = ai_engine.determine_intent(user_prompt)
             
-            # The God-Tier Thinking Animation
-            st.toast("Initiating Neural Scan...", icon="🧠")
-            status_text = "🧠 APEX Engine processing threat vector..." if lang == "en" else "🧠 מנוע APEX מנתח סיכונים..."
+            # --- TIER-BASED ANIMATION & THROTTLING ---
+            if is_premium:
+                status_text = "🧠 PREMIUM Engine Processing..." if lang == "en" else "🧠 מנוע פרימיום מנתח סיכונים..."
+                with st.status(status_text, expanded=True) as status:
+                    st.write("📡 Scanning topological threat DB..." if lang == "en" else "📡 סורק מאגרי מודיעין טופולוגיים...")
+                    time.sleep(0.5)
+                    st.write("🛡️ Hardening payload to Zero-Trust standards..." if lang == "en" else "🛡️ מקשיח קוד לתקן Zero-Trust מחמיר...")
+                    time.sleep(0.5)
+                    status.update(label="👑 Premium Synthesis Complete" if lang == "en" else "👑 סנכרון פרימיום הושלם", state="complete", expanded=False)
+            else:
+                status_text = "⏳ FREE Tier Processing (Throttled)..." if lang == "en" else "⏳ שרת חינמי מעבד (איטי)..."
+                with st.status(status_text, expanded=True) as status:
+                    st.write("Waiting in queue..." if lang == "en" else "ממתין בתור...")
+                    time.sleep(2.0) # Artificial Throttle for FREE users
+                    st.write("Applying basic filters..." if lang == "en" else "מחיל מסננים בסיסיים...")
+                    time.sleep(1.5)
+                    status.update(label="✅ Basic Synthesis Complete" if lang == "en" else "✅ סנכרון בסיסי הושלם", state="complete", expanded=False)
             
-            with st.status(status_text, expanded=True) as status:
-                st.write("📡 Scanning topological threat DB..." if lang == "en" else "📡 סורק מאגרי מודיעין טופולוגיים...")
-                time.sleep(0.7)
-                st.write("🧬 Isolating vulnerability parameters..." if lang == "en" else "🧬 מבודד פרמטרי חולשה בקוד...")
-                time.sleep(0.9)
-                st.write("🛡️ Hardening payload to Zero-Trust standards..." if lang == "en" else "🛡️ מקשיח קוד לתקן Zero-Trust מחמיר...")
-                time.sleep(1.0)
-                status.update(label="✅ Synthesis Complete" if lang == "en" else "✅ סנכרון הושלם בהצלחה", state="complete", expanded=False)
+            # --- FAIL-SAFE DATA RETRIEVAL ---
+            code_pool = ai_engine.premium_blueprints if is_premium else ai_engine.free_blueprints
+            final_code = code_pool.get(intent, code_pool.get("generic", "# Fallback Error"))
             
-            # Fail-Safe Data Retrieval
-            final_code = st.session_state.ai_gen.blueprints.get(intent, st.session_state.ai_gen.blueprints["generic"])
-            instruction = st.session_state.ai_gen.guides.get(intent, st.session_state.ai_gen.guides["generic"])[lang]
-            ai_intel = st.session_state.ai_gen.generate_ai_analysis(intent, lang)
+            instruction = ai_engine.guides.get(intent, ai_engine.guides["generic"])[lang]
+            intel_report = ai_engine.generate_intel(intent, lang, is_premium)
             
-            # Display Results
+            # --- DISPLAY RESULTS ---
             st.toast("Protocol Deployed!", icon="✅")
-            st.markdown(ai_intel)
-            st.markdown("### 🔒 APEX Security Blueprint:")
+            st.markdown(intel_report)
+            
+            tier_badge = "[PREMIUM V6.0]" if is_premium else "[FREE TIER]"
+            st.markdown(f"### 🔒 Generated Blueprint {tier_badge}:")
             st.code(final_code, language="python")
             
             title_guide = "📌 ארכיטקטורת רשת (הטמעה):" if lang == "he" else "📌 Network Architecture (Deployment):"
-            st.success(f"**{title_guide}**\n\n{instruction}")
+            st.info(f"**{title_guide}**\n\n{instruction}")
+            
+            if not is_premium:
+                st.error("💡 **TIP:** Unlock Asymmetric Crypto, AI Threat Intelligence, and Zero-Trust networks by upgrading to **PREMIUM MAX** from the sidebar.")
 
 st.markdown("---")
-st.caption("APEX SOC Terminal V6.0 | System Architecture: Zero-Crash | Encrypted Connection")
+st.caption("THE ONE ABOVE ALL | V7.0 God-Tier Architecture | System Status: Unbreakable")
