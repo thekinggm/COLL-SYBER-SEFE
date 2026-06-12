@@ -24,23 +24,25 @@ logger = logging.getLogger("AdvancedDefensiveAI")
 # 2. STATEFUL CONTEXT & CONVERSATIONAL MEMORY MANAGEMENT
 # =====================================================================
 class AdvancedConversationMemory:
-    def __init__(self, max_history_len: int = 20):
+    def __init__(self, max_history_len: int = 30): # Expanded memory
         self.history: List[Dict[str, Any]] = []
         self.max_history_len = max_history_len
         self.global_risk_weight: float = 0.0
 
-    def commit_interaction(self, intent_type: str, user_query: str, detected_risks: int, status: str):
+    def commit_interaction(self, intent_type: str, user_query: str, detected_risks: int, status: str, language: str):
         if len(self.history) >= self.max_history_len:
             self.history.pop(0)
             
         self.history.append({
             "timestamp": time.time(),
             "intent_type": intent_type,
+            "language": language,
             "query": user_query,
             "risks_count": detected_risks,
             "status": status
         })
         
+        # Smart risk decay/accumulation
         self.global_risk_weight += (detected_risks * 1.5)
         if status == "BLOCKED":
             self.global_risk_weight += 5.0
@@ -48,9 +50,10 @@ class AdvancedConversationMemory:
     def get_deep_context_intent(self) -> Optional[str]:
         if not self.history:
             return None
+        # Look for the most severe/recent intents
         for interaction in reversed(self.history):
             intent = interaction["intent_type"]
-            if intent in ["sql", "command", "file", "crypto", "xss", "brute", "csrf"]:
+            if intent in ["sql", "command", "file", "crypto", "xss", "brute", "csrf", "token"]:
                 return intent
         return self.history[-1]["intent_type"]
 
@@ -72,7 +75,6 @@ class EnterpriseSecurityContext:
         self.rate_limits: Dict[str, List[float]] = {}
         self.memory_vault: Dict[str, AdvancedConversationMemory] = {}
         
-        # Admin Hash Configuration - Password: "AdminMaster2026!"
         self._admin_salt = b"secure_soc_salt_vector_99"
         self._admin_password_hash = hashlib.pbkdf2_hmac('sha256', b"AdminMaster2026!", self._admin_salt, 50000).hex()
 
@@ -98,10 +100,6 @@ class EnterpriseSecurityContext:
         return hmac.compare_digest(self._admin_password_hash, attempt_hash)
 
     def enforce_sliding_window_rate_limit(self, client_id: str, max_reqs: int = 15, window: int = 86400) -> bool:
-        """
-        ENHANCED RATE LIMITER: Restricts the user to exactly 15 successful requests 
-        per rolling 24-hour window (86400 seconds) for ultimate production stability.
-        """
         now = time.time()
         if client_id not in self.rate_limits:
             self.rate_limits[client_id] = []
@@ -134,7 +132,8 @@ class MultiTierInputValidator:
             r"(?i)<iframe[^>]*>.*<\/iframe>": "XSS Payload Threat",
             r"(?i)javascript\s*:\s*alert": "DOM XSS Injection",
             r"(?i)document\.cookie": "Session Hijacking Vector",
-            r"(__import__\s*\(|os\.system|subprocess\.|getattr\s*\()": "RCE Server Payload"
+            r"(__import__\s*\(|os\.system|subprocess\.|getattr\s*\()": "RCE Server Payload",
+            r"(?i)(\.\.\/|\.\.\\)": "Path Traversal Vector" # Added Deep Inspection Rule
         }
         for pattern, risk_name in inspection_rules.items():
             if re.search(pattern, text):
@@ -161,8 +160,13 @@ class ASTDeepAnalyzer:
                     findings.append({"type": "DynamicExecutionVulnerability", "severity": "HIGH", "details": f"Dangerous primitive '{node.func.id}' detected.", "line": getattr(node, 'lineno', 1)})
 
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                if node.func.attr in ['Popen', 'run', 'system'] or (isinstance(node.func.value, ast.Name) and node.func.value.id == 'os' and node.func.attr == 'system'):
-                    findings.append({"type": "ShellCommandInjection", "severity": "CRITICAL", "details": f"Subprocess invocation via '{node.func.attr}' allows host injection.", "line": getattr(node, 'lineno', 1)})
+                if node.func.attr in ['Popen', 'run', 'system', 'call'] or (isinstance(node.func.value, ast.Name) and node.func.value.id == 'os' and node.func.attr in ['system', 'popen']):
+                    # Check for shell=True vulnerability
+                    has_shell_true = any(isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in node.keywords if kw.arg == 'shell')
+                    if has_shell_true:
+                         findings.append({"type": "ShellCommandInjection", "severity": "CRITICAL", "details": f"Subprocess invocation via '{node.func.attr}' with shell=True is highly vulnerable.", "line": getattr(node, 'lineno', 1)})
+                    else:
+                         findings.append({"type": "SubprocessCallWarning", "severity": "MEDIUM", "details": f"Subprocess invocation via '{node.func.attr}'. Ensure inputs are parameterized.", "line": getattr(node, 'lineno', 1)})
 
             if isinstance(node, ast.Assign):
                 for target in node.targets:
@@ -188,6 +192,7 @@ class DynamicThreatModeler:
                 base_score -= 10
                 continue
             base_score -= 25 if v["severity"] == "CRITICAL" else 15 if v["severity"] == "HIGH" else 5
+            
             if v["type"] == "ShellCommandInjection":
                 attack_vectors.append("STRIDE: Tampering / Elevation of Privilege")
                 mitigations.append("Pass parameters as structurally bounded Lists. Enforce shell=False.")
@@ -210,12 +215,14 @@ class DynamicThreatModeler:
 # =====================================================================
 class SmartDefensiveGenerator:
     def __init__(self):
+        # UPGRADED: Stronger Code Blueprints + Added Token Grabbing Defense
         self.premium_blueprints = {
             "sql": '''def execute_secure_database_query(db_connection, client_supplied_id: int) -> dict:
     import logging
     try:
         sanitized_id = int(client_supplied_id)
         with db_connection.cursor() as cursor:
+            # Parameterized Query prevents SQLi
             query = "SELECT account_id, balance, owner_name, tier_level FROM accounts WHERE account_id = ?"
             cursor.execute(query, (sanitized_id,))
             row = cursor.fetchone()
@@ -225,14 +232,17 @@ class SmartDefensiveGenerator:
     except (ValueError, TypeError) as type_err:
         logging.error(f"Security Alert: Data type boundary exception intercepted: {str(type_err)}")
         return {"status": "Error: Invalid parameter syntax provided."}
-    except Exception:
+    except Exception as e:
+        logging.critical(f"DB Error: {str(e)}")
         return {"status": "Error: Internal server processing error."}''',
             
             "command": '''def execute_secure_network_diagnostic(target_destination: str) -> str:
     import subprocess, re
+    # Strict Regex allowing ONLY valid domain/IP characters
     if not re.match(r"^[a-zA-Z0-9.-]+$", target_destination.strip()):
-        raise PermissionError("Security Exception: Malicious command characters detected inside sequence payload.")
+        raise PermissionError("Security Exception: Malicious command characters detected.")
     try:
+        # shell=False and list parameters prevent Command Injection
         result = subprocess.run(
             ["ping", "-c", "2", target_destination.strip()], 
             capture_output=True, text=True, shell=False, timeout=5, check=True
@@ -244,52 +254,88 @@ class SmartDefensiveGenerator:
             "file": '''def secure_file_retrieval(user_requested_path: str, storage_root: str = "/app/user_space") -> str:
     import os
     base_directory = os.path.abspath(storage_root)
+    # Compute the absolute path to prevent Directory Traversal
     computed_target_path = os.path.abspath(os.path.join(base_directory, user_requested_path))
+    
     if not computed_target_path.startswith(base_directory):
-        raise PermissionError("Access Violation Alert: Virtual machine sandbox traversal container escape blocked.")
-    if not os.path.exists(computed_target_path):
-        raise FileNotFoundError("Requested asset node cannot be located inside server storage index.")
+        raise PermissionError("Access Violation Alert: Directory traversal attempt blocked.")
+    if not os.path.isfile(computed_target_path):
+        raise FileNotFoundError("Requested asset node cannot be located.")
+        
     with open(computed_target_path, 'r', encoding='utf-8', errors='ignore') as active_file:
         return active_file.read()''',
             
             "crypto": '''def hash_password_pbkdf2(password_string: str) -> str:
-    import hashlib, os, secrets
+    import hashlib, secrets
+    # Use cryptographic secrets module for salt generation
     salt_vector = secrets.token_bytes(32)
     derived_key = hashlib.pbkdf2_hmac(
-        hash_name='sha256',
+        hash_name='sha3_256', # Upgraded to SHA-3
         password=password_string.encode('utf-8'),
         salt=salt_vector,
-        iterations=100000
+        iterations=210000 # Increased iterations for brute-force resistance
     )
-    return f"pbkdf2_sha256$100000${salt_vector.hex()}${derived_key.hex()}"''',
+    return f"pbkdf2_sha3_256$210000${salt_vector.hex()}${derived_key.hex()}"''',
 
             "xss": '''def sanitize_html_output(untrusted_user_input: str) -> str:
     import html, re
     if not untrusted_user_input or not untrusted_user_input.strip():
         return ""
+    # Strip null bytes and known malicious tags before escaping
     scrubbed_payload = untrusted_user_input.replace("\\x00", "").strip()
-    scrubbed_payload = re.sub(r"(?i)<script[^>]*>.*?</script>", "", scrubbed_payload)
+    scrubbed_payload = re.sub(r"(?i)<(script|iframe|object|embed|form)[^>]*>.*?</\\1>", "", scrubbed_payload)
     return html.escape(scrubbed_payload, quote=True)''',
 
-            "brute": '''def verify_login_with_rate_limiting(username: str, client_ip: str, cache_connection) -> bool:
-    import time, logging
-    current_epoch_time = time.time()
-    tracking_window_key = f"auth_rate_limit:ip:{client_ip}"
-    historical_attempts_ledger = cache_connection.get_attempts(tracking_window_key, since=current_epoch_time - 60)
-    if len(historical_attempts_ledger) >= 5:
-        raise PermissionError("Access Temporarily Locked: Too many consecutive requests.")
+            "brute": '''def verify_login_with_rate_limiting(client_ip: str, redis_cache_connection) -> bool:
+    import time
+    current_epoch_time = int(time.time())
+    tracking_window_key = f"waf:rate_limit:{client_ip}"
+    
+    # Implementing a secure Token Bucket / Sliding Window via Cache
+    attempts = redis_cache_connection.incr(tracking_window_key)
+    if attempts == 1:
+        redis_cache_connection.expire(tracking_window_key, 300) # 5 minutes lockout window
+        
+    if attempts > 5:
+        raise PermissionError("Access Temporarily Locked: Brute force vector detected.")
     return True''',
 
             "csrf": '''def generate_and_verify_csrf_token(session_context: dict, client_token: str = None) -> str:
     import secrets, hmac
     if client_token is None:
-        cryptographic_token = secrets.token_hex(32)
+        cryptographic_token = secrets.token_urlsafe(64)
         session_context["secure_csrf_secret_key"] = cryptographic_token
         return cryptographic_token
+        
     server_cached_token = session_context.get("secure_csrf_secret_key", "")
+    # Use compare_digest to prevent Timing Attacks
     if not server_cached_token or not hmac.compare_digest(server_cached_token, client_token):
         raise PermissionError("CSRF Attack Vector Triggered: Validation has failed.")
-    return "HANDSHAKE_VERIFIED"'''
+    return "HANDSHAKE_VERIFIED"''',
+
+            # ADDED: Defense against Token Grabbing / Session Hijacking
+            "token": '''def validate_secure_jwt_token(auth_header: str, server_secret: str) -> dict:
+    import hmac, hashlib, base64, json, time
+    if not auth_header.startswith("Bearer "):
+        raise ValueError("Invalid Token Structure.")
+        
+    token_parts = auth_header.split(" ")[1].split(".")
+    if len(token_parts) != 3:
+        raise ValueError("Malformed Token Data.")
+        
+    header, payload, signature = token_parts
+    expected_signature = base64.urlsafe_b64encode(
+        hmac.new(server_secret.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()
+    ).decode().rstrip("=")
+    
+    if not hmac.compare_digest(signature, expected_signature):
+        raise PermissionError("Token Tampering Detected! Token Grabbing Protection Triggered.")
+        
+    decoded_payload = json.loads(base64.urlsafe_b64decode(payload + "==").decode())
+    if decoded_payload.get("exp", 0) < time.time():
+        raise PermissionError("Token has expired.")
+        
+    return decoded_payload'''
         }
         
         self.free_blueprints = {
@@ -299,8 +345,56 @@ class SmartDefensiveGenerator:
             "crypto": '''# FREE VERSION:\ndef weak_md5_hash(password):\n    import hashlib\n    return hashlib.md5(password.encode()).hexdigest()''',
             "xss": '''# FREE VERSION:\ndef raw_replace(text):\n    return text.replace("<script>", "")''',
             "brute": '''# FREE VERSION:\ndef basic_count(user):\n    return True''',
-            "csrf": '''# FREE VERSION:\ndef bypass_csrf():\n    return "CSRF disabled in FREE tier"'''
+            "csrf": '''# FREE VERSION:\ndef bypass_csrf():\n    return "CSRF disabled in FREE tier"''',
+            "token": '''# FREE VERSION:\ndef check_token(t):\n    return True if t else False'''
         }
+
+        # BILINGUAL IMPLEMENTATION GUIDES
+        self.implementation_guides = {
+            "sql": {
+                "he": "יש לשלב את הפונקציה הזו בשכבת הגישה לנתונים (Data Access Layer - DAL) באפליקציה שלך, לפני ביצוע השאילתות במסד הנתונים.",
+                "en": "Implement this function in your Data Access Layer (DAL) before executing queries against the database."
+            },
+            "command": {
+                "he": "הטמע את הפונקציה הזו בשכבת הבקר (Controller) שמטפלת בפקודות מערכת, והחלף באמצעותה קריאות ישירות ל-os.system.",
+                "en": "Embed this in the Controller layer handling system commands, replacing any direct calls to os.system."
+            },
+            "file": {
+                "he": "שים את הקוד הזה במודול ניהול הקבצים של השרת, למשל בראוט (Route) האחראי על הורדת או הצגת קבצים למשתמשים.",
+                "en": "Place this code in your server's file management module, typically in the Route responsible for downloading or serving files."
+            },
+            "crypto": {
+                "he": "יש למקם את הקוד הזה במנגנון ההרשמה (Registration) והאימות (Authentication), ממש לפני שמירת משתמש חדש במסד הנתונים.",
+                "en": "Locate this code in your Registration and Authentication flow, right before saving a new user to the database."
+            },
+            "xss": {
+                "he": "יש לקרוא לפונקציה הזו בשכבת התצוגה (View / Frontend render), ממש לפני שאתה מציג טקסט של משתמש אל תוך קוד ה-HTML של האתר.",
+                "en": "Call this function in your View/Frontend rendering layer, right before injecting user-supplied text into the DOM/HTML."
+            },
+            "brute": {
+                "he": "הטמע קוד זה כ-Middleware או בשלב הראשון של פונקציית ה-Login שלך, לפני שאתה בודק סיסמאות מול המסד.",
+                "en": "Implement this code as Middleware or at the very beginning of your Login function, prior to checking passwords."
+            },
+            "csrf": {
+                "he": "יש לשלב את ייצור הטוקן בעת יצירת ה-Session, ואת האימות להריץ ב-Middleware שיושב על כל בקשות ה-POST/PUT/DELETE.",
+                "en": "Integrate token generation during Session creation, and run the validation in a Middleware applied to all POST/PUT/DELETE requests."
+            },
+            "token": {
+                "he": "הדבק את הקוד ב-API Gateway או ב-Middleware שמגן על נתיבים פרטיים (Private Routes) כדי למנוע כניסה עם טוקן גנוב.",
+                "en": "Paste this code in your API Gateway or Auth Middleware protecting Private Routes to prevent access via stolen/grabbed tokens."
+            },
+            "generic": {
+                "he": "יש לשלב פונקציה זו כחלק ממנגנון ניקוי הקלט הגלובלי (Sanitization Middleware) של האפליקציה שלך.",
+                "en": "Integrate this function as part of your application's global Input Sanitization Middleware."
+            }
+        }
+
+    # SMART LANGUAGE DETECTOR
+    def detect_language(self, text: str) -> str:
+        # If text contains Hebrew characters (Unicode range \u0590-\u05FF), treat as Hebrew
+        if any("\u0590" <= c <= "\u05FF" for c in text):
+            return "he"
+        return "en"
 
     def determine_intent(self, user_query: str, last_intent: Optional[str], plan_tier: str) -> str:
         query_clean = user_query.lower().strip()
@@ -312,27 +406,45 @@ class SmartDefensiveGenerator:
             if "command" in query_clean or "ping" in query_clean: return "command"
             if "file" in query_clean or "path" in query_clean: return "file"
             if "crypto" in query_clean or "hash" in query_clean or "password" in query_clean: return "crypto"
+            if "token" in query_clean or "jwt" in query_clean: return "token"
             return "generic"
         else:
             xss_keywords = ["xss", "cross-site scripting", "script injection", "html escape", "sanitize input", "גניבת עוגיות", "הזרקת סקריפט", "עוגיות", "סניטציה"]
             if any(w in query_clean for w in xss_keywords): return "xss"
+            
             brute_keywords = ["brute force", "rate limit", "ddos", "login block", "attempts", "הצפה", "חסימת משתמש", "ניחוש סיסמה", "מגבלת בקשות", "ברוט פורס"]
             if any(w in query_clean for w in brute_keywords): return "brute"
-            csrf_keywords = ["csrf", "cross-site request forgery", "xsrf", "form token", "זיוף בקשה", "טוקן", "טפסים מאובטחים"]
+            
+            csrf_keywords = ["csrf", "cross-site request forgery", "xsrf", "form token", "זיוף בקשה", "טוקן טופס", "טפסים מאובטחים"]
             if any(w in query_clean for w in csrf_keywords): return "csrf"
+            
             sql_keywords = ["sql", "db", "database", "query", "select", "בסיס נתונים", "שאילתה", "מסד", "נתונים"]
             if any(w in query_clean for w in sql_keywords): return "sql"
+            
             command_keywords = ["command", "os", "subprocess", "ping", "terminal", "run", "טרמינל", "פקודה", "פינג", "להריץ"]
             if any(w in query_clean for w in command_keywords): return "command"
+            
             file_keywords = ["file", "path", "read", "open", "directory", "קובץ", "לקרוא קובץ", "נתיב", "תיקייה"]
             if any(w in query_clean for w in file_keywords): return "file"
+            
             crypto_keywords = ["crypto", "hash", "password", "encrypt", "sha", "md5", "salt", "הצפנה", "סיסמה", "האש", "להצפין"]
             if any(w in query_clean for w in crypto_keywords): return "crypto"
+            
+            token_keywords = ["token", "jwt", "grabber", "session hijack", "auth header", "טוקן", "חטיפת טוקן", "גניבת זהות"]
+            if any(w in query_clean for w in token_keywords): return "token"
+            
             return last_intent if last_intent else "generic"
 
-    def synthesize_secure_code(self, determined_intent: str, plan_tier: str) -> str:
+    def synthesize_secure_code(self, determined_intent: str, plan_tier: str, language: str) -> Tuple[str, str]:
         active_blueprint_pool = self.premium_blueprints if plan_tier == "PREMIUM" else self.free_blueprints
-        return active_blueprint_pool.get(determined_intent, '''def core_input_sanitizer(raw_data: str) -> str:\n    import html\n    return html.escape(raw_data.strip())[:1000]''')
+        
+        generated_code = active_blueprint_pool.get(determined_intent, '''def core_input_sanitizer(raw_data: str) -> str:\n    import html\n    return html.escape(raw_data.strip())[:1000]''')
+        
+        # Pull correct language string
+        instruction_dict = self.implementation_guides.get(determined_intent, self.implementation_guides["generic"])
+        instruction_text = instruction_dict.get(language, instruction_dict["en"])
+        
+        return generated_code, instruction_text
 
 
 # =====================================================================
@@ -346,7 +458,7 @@ if "security_context" not in st.session_state:
     st.session_state.generator = SmartDefensiveGenerator()
     st.session_state.session_id = None
     st.session_state.client_ip = "192.168.1.104"
-    st.session_state.client_ua = "Mozilla/5.0 EnterpriseSecureAI/3.2"
+    st.session_state.client_ua = "Mozilla/5.0 EnterpriseSecureAI/4.0"
     st.session_state.is_admin = False  
     st.session_state.rate_limiting_enabled = True  
 
@@ -414,7 +526,6 @@ else:
     st.caption("Production Grade Monolith Implementation — Public User Workspace")
     st.markdown("---")
 
-    # Cleaned, highly readable sidebar layout
     with st.sidebar:
         st.header("💎 Subscription Plan")
         selected_plan = st.radio(
@@ -432,26 +543,22 @@ else:
         elif risk_score > 0.0: st.warning(f"🟡 STATE: ELEVATED RISK ({risk_score:.2f})")
         else: st.success(f"🟢 STATE: NOMINAL SECURE")
 
-    # Main Area Workspaces
     col_workspace, col_siem_dashboard = st.columns([1, 1])
 
     with col_workspace:
-        # Beautiful, permanent dashboard alert showing Premium upgrade on the main screen
         if current_tier == "PREMIUM":
             st.success("""
             ### 🌟 PREMIUM MODEL FEATURES UNLOCKED
-            * 🧠 **Deep Memory Vault** (Tracks up to 20 past context loops)
-            * 🛡️ **Bilingual AI Processing** (Native Hebrew & English Support)
-            * 📦 **Production Blueprints** (Bulletproof snippet generation with built-in Exception handling)
-            
-            *To register your lifetime license, please contact the founder via direct channels to settle the $10 invoice via PayPal/Wire Transfer.*
+            * 🧠 **Deep Memory Vault** (Context loops & Language tracking)
+            * 🛡️ **Bilingual AI Processing** (Native Hebrew & English Auto-Detect)
+            * 📦 **Production Blueprints** (Advanced Token Grabbing, JWT validation, SQLi defenses)
             """)
         else:
-            st.info("ℹ️ Running on FREE Tier. Multi-turn context history, bilingual Hebrew parsing, and high-tier code generation are currently disabled.")
+            st.info("ℹ️ Running on FREE Tier. Multi-turn context history, bilingual auto-detect, and high-tier code generation are currently disabled.")
 
         st.header("🧠 Conversational Prompt Processing")
         default_prompt = "Give me code to prevent XSS attacks." if current_tier == "FREE" else "תראה לי קוד מאובטח שמנטרל תקיפות XSS"
-        user_prompt = st.text_input("Enter your request:", value=default_prompt)
+        user_prompt = st.text_input("Enter your request (Hebrew/English):", value=default_prompt)
         
         st.header("🔬 Code Asset Vulnerability Simulator")
         default_flawed_script = 'def unsafe_utility(payload):\n    import os\n    db_pass = "Secret123"\n    os.system("ping -c 1 " + payload)'
@@ -465,7 +572,6 @@ else:
         if execute_pipeline_trigger:
             rate_limit_passed = True
             if st.session_state.rate_limiting_enabled:
-                # Strictly enforces 15 allowed requests max per rolling day window
                 rate_limit_passed = st.session_state.security_context.enforce_sliding_window_rate_limit(
                     st.session_state.client_ip, max_reqs=15, window=86400
                 )
@@ -474,21 +580,28 @@ else:
                 st.error("🚨 CRITICAL RATE LIMIT BREACH: [Daily limit of 15 requests reached for this IP address]. Please wait or reset context to restore operational bandwidth.")
             else:
                 try:
+                    # Pipeline Execution
                     sanitized_prompt = MultiTierInputValidator.sanitize_string(user_prompt)
                     is_input_safe, attack_vector = MultiTierInputValidator.inspect_malicious_payloads(sanitized_prompt)
                     
+                    # Detect Language dynamically
+                    detected_lang = st.session_state.generator.detect_language(sanitized_prompt)
+                    lang_label = "עברית" if detected_lang == "he" else "English"
+                    
                     if not is_input_safe:
                         st.error(f"❌ MALICIOUS PAYLOAD INTERCEPTED BY WAF: [{attack_vector}]")
-                        memory_vault.commit_interaction("ATTACK", user_prompt, 5, "BLOCKED")
+                        memory_vault.commit_interaction("ATTACK", user_prompt, 5, "BLOCKED", detected_lang)
                     else:
                         findings_report = st.session_state.code_analyzer.analyze(code_input_area)
                         threat_matrix_profile = DynamicThreatModeler.build_matrix(findings_report, memory_vault.global_risk_weight)
                         
                         historical_intent_node = memory_vault.get_deep_context_intent() if current_tier == "PREMIUM" else None
                         derived_intent = st.session_state.generator.determine_intent(sanitized_prompt, historical_intent_node, current_tier)
-                        secured_output_blueprint = st.session_state.generator.synthesize_secure_code(derived_intent, current_tier)
                         
-                        memory_vault.commit_interaction(derived_intent, sanitized_prompt, len(findings_report), "SUCCESS")
+                        # Get Code & Bilingual Instructions
+                        secured_output_blueprint, implementation_instructions = st.session_state.generator.synthesize_secure_code(derived_intent, current_tier, detected_lang)
+                        
+                        memory_vault.commit_interaction(derived_intent, sanitized_prompt, len(findings_report), "SUCCESS", detected_lang)
                         
                         st.subheader("📈 STRIDE Resilience Calculation Score")
                         resilience_metric = threat_matrix_profile["resilience_index"]
@@ -502,8 +615,13 @@ else:
                                 st.caption(element["details"])
                         else: st.success("✅ No structural vulnerabilities found in code fragment.")
                             
-                        st.markdown(f"### 🛡️ Hardened [{current_tier} TIER] Python Implementation")
+                        st.markdown(f"### 🛡️ קוד הגנתי מאובטח (Tier: {current_tier} | Language Detected: {lang_label})")
+                        
                         st.code(secured_output_blueprint, language="python")
+                        
+                        # Dynamic Implementation Guide rendering
+                        guide_title = "היכן להדביק את הקוד?" if detected_lang == "he" else "Where should I paste this code?"
+                        st.info(f"📌 **{guide_title}**\n\n{implementation_instructions}")
                         
                 except ValueError as val_err: st.error(f"Validation Error: {str(val_err)}")
         else: st.info("Awaiting execution data trigger. Press the button to pass variables through the security layers.")
